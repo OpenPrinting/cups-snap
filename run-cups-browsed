@@ -1,0 +1,32 @@
+#! /bin/sh
+
+set -e
+
+mkdir -p $SNAP_DATA/var/log
+mkdir -p $SNAP_DATA/var/cache
+mkdir -p $SNAP_DATA/etc
+
+CONF=$SNAP_DATA/etc/cups-browsed.conf
+DAEMON=$SNAP/usr/sbin/cups-browsed
+PORT=631
+DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
+
+LC_ALL=C.UTF-8
+LANG=C.UTF-8
+
+if [ -e $SNAP/default.yaml ]; then
+    PORT=$(grep -A1 cups $SNAP/default.yaml|\
+		  grep port:|sed "s:.*port\: ::")
+fi
+
+cat << EOF > $CONF
+CacheDir $SNAP_DATA/var/cache
+LogDir $SNAP_DATA/var/log
+DebugLogging file
+BrowseRemoteProtocols dnssd cups
+IPBasedDeviceURIs IPv4
+DomainSocket $DOMAINSOCKET
+CreateIPPPrinterQueues Yes
+EOF
+
+IPP_PORT=$PORT CUPS_SERVER=$DOMAINSOCKET $DAEMON -c $CONF

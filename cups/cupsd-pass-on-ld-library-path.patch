@@ -1,0 +1,13 @@
+--- scheduler/env.c.orig	2016-08-01 16:27:56.556828695 -0300
++++ scheduler/env.c	2016-08-01 16:28:25.708908085 -0300
+@@ -123,8 +123,8 @@
+   * Do not allow dynamic linker variables when running as root...
+   */
+ 
+-  if (!RunUser && (!strncmp(name, "DYLD_", 5) || !strncmp(name, "LD_", 3)))
+-    return;
++  /*if (!RunUser && (!strncmp(name, "DYLD_", 5) || !strncmp(name, "LD_", 3)))
++    return;*/
+ 
+  /*
+   * See if this variable has already been defined...

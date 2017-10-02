@@ -1,0 +1,54 @@
+#! /bin/sh
+
+set -e
+
+mkdir -p $SNAP_DATA/var/spool/tmp
+mkdir -p $SNAP_DATA/var/run/certs
+mkdir -p $SNAP_DATA/var/log
+mkdir -p $SNAP_DATA/var/cache/fontconfig
+mkdir -p $SNAP_DATA/etc/ppd
+mkdir -p $SNAP_DATA/etc/fonts
+
+CUPSFILESCONF=$SNAP/etc/cups/cups-files.conf
+CUPSDCONF=$SNAP/etc/cups/cupsd.conf
+SCHEDULER=$SNAP/usr/sbin/cupsd
+FONTSCONF=$SNAP/etc/fonts/fonts.conf
+PORT=631
+DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
+
+LC_ALL=C.UTF-8
+LANG=C.UTF-8
+
+cp -an $SNAP/etc/cups/. $SNAP_DATA/etc/
+cat $CUPSFILESCONF | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)/:\1\2'"$SNAP"'/:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/var/(\S*?)/cups(.*)$:\1\2'"$SNAP_DATA"'/var/\3\4:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/etc:\1\2'"$SNAP_DATA"'/etc\3\5:g' | perl -p -e 's:/etc/cups:/etc:g' > $SNAP_DATA/etc/cups-files.conf
+cat $CUPSDCONF | grep -v 'Listen[[:space:]]+/' > $SNAP_DATA/etc/cupsd.conf
+
+if [ -e $SNAP/default.yaml ]; then
+    PORT=$(grep -A1 cups $SNAP/default.yaml|\
+		  grep port:|sed "s:.*port\: ::")
+    #if ( test "$PORT" != "631" ); then
+	cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_DATA/etc/cupsd.conf.new && \
+	    echo Port $PORT > $SNAP_DATA/etc/cupsd.conf && \
+	    cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
+	    rm $SNAP_DATA/etc/cupsd.conf.new
+    #fi
+fi
+
+if [ -n "$DOMAINSOCKET" ]; then
+    cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen > $SNAP_DATA/etc/cupsd.conf.new && \
+	echo Listen $DOMAINSOCKET > $SNAP_DATA/etc/cupsd.conf && \
+	cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
+	rm $SNAP_DATA/etc/cupsd.conf.new
+fi
+
+echo PassEnv FONTCONFIG_FILE >> $SNAP_DATA/etc/cupsd.conf
+
+perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug2:g' $SNAP_DATA/etc/cupsd.conf
+
+chmod 0640 $SNAP_DATA/etc/cups-files.conf $SNAP_DATA/etc/cupsd.conf
+
+cat $FONTSCONF | perl -p -e 's:(<dir>)(/):$1'"$SNAP"'$2:' | perl -p -e 's:(<cachedir>)(/):$1'"$SNAP_DATA"'$2:' > $SNAP_DATA/etc/fonts/fonts.conf
+
+export FONTCONFIG_FILE=$SNAP_DATA/etc/fonts/fonts.conf
+
+$SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf

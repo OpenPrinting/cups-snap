@@ -1,0 +1,126 @@
+name: cups
+version: 0.1.0
+summary: CUPS snap
+description: Printing environment accepting distribution-independent printer driver plugins
+grade: devel
+confinement: devmode
+
+environment:
+  CUPS_SERVER: $SNAP_DATA/var/run/cups.sock
+
+apps:
+  cupsd:
+    command: ./run-cupsd
+    daemon: simple
+    plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
+  cups-browsed:
+    command: ./run-cups-browsed
+    daemon: simple
+    plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
+  lpinfo:
+    command: ./usr/sbin/lpinfo
+    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+  lpadmin:
+    command: ./usr/sbin/lpadmin
+    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+  lpstat:
+    command: ./usr/bin/lpstat
+    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+  lpoptions:
+    command: ./usr/bin/lpoptions
+    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+  lp:
+    command: ./usr/bin/lp
+    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+  mutool:
+    command: ./usr/bin/mutool
+
+parts:
+  cups:
+    source: ./cups
+    plugin: make
+    build-packages:
+        - patch
+        - autoconf
+        - automake
+        - libtool
+        - autotools-dev
+        - pkg-config
+        - ghostscript
+        - libavahi-client-dev
+        - libavahi-common-dev
+        - libavahi-compat-libdnssd-dev
+        - libdbus-1-dev
+        - libfontconfig1-dev
+        - libfreetype6-dev
+        - libgnutls28-dev
+        - libijs-dev
+        - libjpeg-dev
+        - libldap2-dev
+        - libkrb5-dev
+        - libpam0g-dev
+        - libpaper-dev
+        - libpng-dev
+        - libsystemd-dev
+        - libtiff5-dev
+        - libusb-1.0-0-dev
+        - po4a
+        - po-debconf
+        - poppler-utils
+        - sharutils
+        - zlib1g-dev
+  cups-filters:
+    source: ./cups-filters
+    plugin: make
+    build-packages:
+        - autoconf
+        - autotools-dev
+        - pkg-config
+        - sharutils
+        - poppler-utils
+        - libglib2.0-dev
+        - liblcms2-dev
+        - libldap2-dev
+        - libpoppler-private-dev
+        - libpoppler-cpp-dev
+        - libqpdf-dev
+        - libjpeg-dev
+        - libpng-dev
+        - libtiff5-dev
+        - libijs-dev
+        - zlib1g-dev
+        - libfontconfig1-dev
+        - libdbus-1-dev
+        - libavahi-common-dev
+        - libavahi-client-dev
+        - libavahi-glib-dev
+        - librsvg2-bin
+        - liblouis-dev
+        - fonts-dejavu-core
+    after: [cups, mupdf]
+  mupdf:
+    source: ./mupdf
+    plugin: make
+  selected-fonts: # Temporary, fonts shpuld come from the system
+    plugin: dump
+    #source: /usr/share/fonts
+    stage-packages:
+        - fonts-freefont-ttf
+        - fontconfig-config
+    prime:
+        - usr/share/fonts/*
+        - etc/fonts/fonts.conf
+    organize: # see lp#1588283
+     /usr/share/fonts/truetype/freefont/*.ttf: usr/share/cups/fonts/
+     #/etc/fonts/fonts.conf: etc/fonts/fonts.conf
+  copy:
+    plugin: dump
+    #organize:
+      #run-cupsd: run-cupsd
+      #run-cups-browsed: run-cups-browsed
+      #default.yaml: default.yaml
+    stage-packages:
+        - perl-base
+        - sed
+        - grep
+    after: [cups, cups-filters, selected-fonts]
