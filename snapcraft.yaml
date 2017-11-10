@@ -12,28 +12,35 @@ apps:
   cupsd:
     command: ./run-cupsd
     daemon: simple
-    plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
+    #plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, network-bind, avahi-observe, avahi-control]
   cups-browsed:
     command: ./run-cups-browsed
     daemon: simple
-    plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
+    #plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, network-bind, avahi-observe, avahi-control]
   lpinfo:
     command: ./usr/sbin/lpinfo
-    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
   lpadmin:
     command: ./usr/sbin/lpadmin
-    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
   lpstat:
     command: ./usr/bin/lpstat
-    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
   lpoptions:
     command: ./usr/bin/lpoptions
-    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
   lp:
     command: ./usr/bin/lp
-    plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-  mutool:
-    command: ./usr/bin/mutool
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
+  #mutool:
+  #  command: ./usr/bin/mutool
 
 parts:
   cups:
@@ -97,10 +104,11 @@ parts:
         - librsvg2-bin
         - liblouis-dev
         - fonts-dejavu-core
-    after: [cups, mupdf]
-  mupdf:
-    source: ./mupdf
-    plugin: make
+    #after: [cups, mupdf]
+    after: [cups]
+  #mupdf:
+    #source: ./mupdf
+    #plugin: make
   selected-fonts: # Temporary, fonts shpuld come from the system
     plugin: dump
     #source: /usr/share/fonts
