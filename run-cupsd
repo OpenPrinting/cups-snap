@@ -21,25 +21,21 @@ LANG=C.UTF-8
 
 cp -an $SNAP/etc/cups/. $SNAP_DATA/etc/
 cat $CUPSFILESCONF | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)/:\1\2'"$SNAP"'/:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/var/(\S*?)/cups(.*)$:\1\2'"$SNAP_DATA"'/var/\3\4:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/etc:\1\2'"$SNAP_DATA"'/etc\3\5:g' | perl -p -e 's:/etc/cups:/etc:g' > $SNAP_DATA/etc/cups-files.conf
-cat $CUPSDCONF | grep -v 'Listen[[:space:]]+/' > $SNAP_DATA/etc/cupsd.conf
+cat $CUPSDCONF | grep -v 'Listen' | perl -p -e 's:^(\s*<Location\s*/>\s*)$:$1  Allow \@LOCAL\n:' > $SNAP_DATA/etc/cupsd.conf
 
 if [ -e $SNAP/default.yaml ]; then
     PORT=$(grep -A1 cups $SNAP/default.yaml|\
 		  grep port:|sed "s:.*port\: ::")
-    #if ( test "$PORT" != "631" ); then
-	cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_DATA/etc/cupsd.conf.new && \
-	    echo Port $PORT > $SNAP_DATA/etc/cupsd.conf && \
-	    cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
-	    rm $SNAP_DATA/etc/cupsd.conf.new
-    #fi
-fi
-
-if [ -n "$DOMAINSOCKET" ]; then
-    cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen > $SNAP_DATA/etc/cupsd.conf.new && \
-	echo Listen $DOMAINSOCKET > $SNAP_DATA/etc/cupsd.conf && \
+    cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_DATA/etc/cupsd.conf.new && \
+	echo Port $PORT > $SNAP_DATA/etc/cupsd.conf && \
 	cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
 	rm $SNAP_DATA/etc/cupsd.conf.new
 fi
+
+cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen > $SNAP_DATA/etc/cupsd.conf.new && \
+    echo Listen $DOMAINSOCKET > $SNAP_DATA/etc/cupsd.conf && \
+    cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
+    rm $SNAP_DATA/etc/cupsd.conf.new
 
 echo PassEnv FONTCONFIG_FILE >> $SNAP_DATA/etc/cupsd.conf
 
