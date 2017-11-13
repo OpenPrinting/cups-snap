@@ -12,45 +12,45 @@ apps:
   cupsd:
     command: ./run-cupsd
     daemon: simple
-    #plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, network-bind, avahi-observe, avahi-control]
+    #plugs: [network, network-bind, daemon-dbus, avahi-control]
+    plugs: [network, network-bind, avahi-control]
   cups-browsed:
     command: ./run-cups-browsed
     daemon: simple
-    #plugs: [network, network-bind, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, network-bind, avahi-observe, avahi-control]
+    #plugs: [network, network-bind, daemon-dbus, avahi-control]
+    plugs: [network, network-bind, avahi-control]
   lpinfo:
     command: ./usr/sbin/lpinfo
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   lpadmin:
     command: ./usr/sbin/lpadmin
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   lpstat:
     command: ./usr/bin/lpstat
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   lpoptions:
     command: ./usr/bin/lpoptions
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   lp:
     command: ./usr/bin/lp
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   cancel:
     command: ./usr/bin/cancel
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   cupsctl:
     command: ./usr/sbin/cupsctl
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   cupsfilter:
     command: ./usr/sbin/cupsfilter
-    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
-    plugs: [network, avahi-observe, avahi-control]
+    #plugs: [network, daemon-dbus, avahi-control]
+    plugs: [network, avahi-control]
   #mutool:
   #  command: ./usr/bin/mutool
 
