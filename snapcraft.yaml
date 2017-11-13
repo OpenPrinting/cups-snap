@@ -39,6 +39,18 @@ apps:
     command: ./usr/bin/lp
     #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
     plugs: [network, avahi-observe, avahi-control]
+  cancel:
+    command: ./usr/bin/cancel
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
+  cupsctl:
+    command: ./usr/sbin/cupsctl
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
+  cupsfilter:
+    command: ./usr/sbin/cupsfilter
+    #plugs: [network, daemon-dbus, avahi-observe, avahi-control]
+    plugs: [network, avahi-observe, avahi-control]
   #mutool:
   #  command: ./usr/bin/mutool
 
