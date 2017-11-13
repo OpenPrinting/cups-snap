@@ -37,14 +37,16 @@ cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen > $SNAP_DATA/etc/cupsd.conf.new &
     cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
     rm $SNAP_DATA/etc/cupsd.conf.new
 
-echo PassEnv FONTCONFIG_FILE >> $SNAP_DATA/etc/cupsd.conf
-
-perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug2:g' $SNAP_DATA/etc/cupsd.conf
-
-chmod 0640 $SNAP_DATA/etc/cups-files.conf $SNAP_DATA/etc/cupsd.conf
-
 cat $FONTSCONF | perl -p -e 's:(<dir>)(/):$1'"$SNAP"'$2:' | perl -p -e 's:(<cachedir>)(/):$1'"$SNAP_DATA"'$2:' > $SNAP_DATA/etc/fonts/fonts.conf
 
 export FONTCONFIG_FILE=$SNAP_DATA/etc/fonts/fonts.conf
+
+echo PassEnv FONTCONFIG_FILE >> $SNAP_DATA/etc/cupsd.conf
+
+echo MaxLogSize 99999 >> $SNAP_DATA/etc/cupsd.conf
+
+perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_DATA/etc/cupsd.conf
+
+chmod 0640 $SNAP_DATA/etc/cups-files.conf $SNAP_DATA/etc/cupsd.conf
 
 $SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf
