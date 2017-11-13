@@ -3,7 +3,7 @@ version: 0.1.0
 summary: CUPS snap
 description: Printing environment accepting distribution-independent printer driver plugins
 grade: devel
-confinement: devmode
+confinement: classic
 
 environment:
   CUPS_SERVER: $SNAP_DATA/var/run/cups.sock
