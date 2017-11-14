@@ -88,7 +88,7 @@ parts:
         - poppler-utils
         - sharutils
         - zlib1g-dev
-	- wget
+        - wget
   cups-filters:
     source: ./cups-filters
     plugin: make
@@ -117,6 +117,8 @@ parts:
         - librsvg2-bin
         - liblouis-dev
         - fonts-dejavu-core
+    stage-packages:
+        - poppler-utils
     #after: [cups, mupdf]
     after: [cups]
   #mupdf:
