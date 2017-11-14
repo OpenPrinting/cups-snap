@@ -1,0 +1,6 @@
+parts
+stage
+prime
+*.snap
+*.tar*
+snap/.snapcraft
