@@ -7,7 +7,7 @@ mkdir -p $SNAP_DATA/var/cache
 mkdir -p $SNAP_DATA/etc
 
 CONF=$SNAP_DATA/etc/cups-browsed.conf
-DAEMON=$SNAP/usr/sbin/cups-browsed
+DAEMON=cups-browsed
 PORT=631
 DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
 

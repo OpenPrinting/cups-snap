@@ -10,54 +10,54 @@ environment:
 
 apps:
   cupsd:
-    command: ./run-cupsd
+    command: run-cupsd
     daemon: simple
-    #plugs: [network, network-bind, daemon-dbus, avahi-control]
     plugs: [network, network-bind, avahi-control]
   cups-browsed:
-    command: ./run-cups-browsed
+    command: run-cups-browsed
     daemon: simple
-    #plugs: [network, network-bind, daemon-dbus, avahi-control]
     plugs: [network, network-bind, avahi-control]
   lpinfo:
-    command: ./usr/sbin/lpinfo
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: lpinfo
     plugs: [network, avahi-control]
   lpadmin:
-    command: ./usr/sbin/lpadmin
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: lpadmin
     plugs: [network, avahi-control]
   lpstat:
-    command: ./usr/bin/lpstat
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: lpstat
     plugs: [network, avahi-control]
   lpoptions:
-    command: ./usr/bin/lpoptions
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: lpoptions
     plugs: [network, avahi-control]
   lp:
-    command: ./usr/bin/lp
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: lp
     plugs: [network, avahi-control]
   cancel:
-    command: ./usr/bin/cancel
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: cancel
     plugs: [network, avahi-control]
   cupsctl:
-    command: ./usr/sbin/cupsctl
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: cupsctl
     plugs: [network, avahi-control]
   cupsfilter:
-    command: ./usr/sbin/cupsfilter
-    #plugs: [network, daemon-dbus, avahi-control]
+    command: cupsfilter
     plugs: [network, avahi-control]
   #mutool:
   #  command: ./usr/bin/mutool
 
 parts:
   cups:
-    source: ./cups
-    plugin: make
+    source: https://github.com/apple/cups/releases/download/v2.2.6/cups-2.2.6-source.tar.gz
+    plugin: autotools
+    prepare: |
+        patch -p0 < ../../../cupsd-pass-on-ld-library-path.patch
+        sed -i 's|$(DSTROOT)|'"${SNAPCRAFT_PART_INSTALL}"'|g' Make*
+        sed -i 's|fchown(cupsFileNumber.*|// fchown(cupsFileNumber(*lf), RunUser, Group);|g' scheduler/log.c
+        sed -i 's|fchmod(cupsFileNumber.*|// fchmod(cupsFileNumber(*lf), LogFilePerm);|g' scheduler/log.c
+        sed -i 's|fchmod(fd.*|// fchmod(fd.*|g' scheduler/cert.c
+        sed -i 's|fchown(fd.*|// fchown(fd.*|g' scheduler/cert.c
+        sed -i 's|chmod(addr->un.sun_path.*|// chmod(addr->un.sun_path|g' cups/http-addr.c
+    configflags:
+        - --with-system-groups=root
     build-packages:
         - patch
         - autoconf
@@ -90,8 +90,12 @@ parts:
         - zlib1g-dev
         - wget
   cups-filters:
-    source: ./cups-filters
-    plugin: make
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.17.9.tar.xz
+    plugin: autotools
+    configflags:
+        - --with-pdftops=pdftops
+        - --disable-ghostscript
+        - --disable-mutool
     build-packages:
         - autoconf
         - autotools-dev
