@@ -1,0 +1,11 @@
+--- scheduler/conf.c.orig	2017-11-16 15:46:46.570154424 -0200
++++ scheduler/conf.c	2017-11-16 17:40:15.722758104 -0200
+@@ -1016,7 +1016,7 @@
+   * a password!
+   */
+ 
+-  if (!RunUser)
++  if (0 && !RunUser)
+   {
+     for (i = 0; i < NumSystemGroups; i ++)
+       if (Group == SystemGroupIDs[i])

@@ -22,16 +22,16 @@ apps:
     plugs: [network, avahi-control]
   lpadmin:
     command: lpadmin
-    plugs: [network, avahi-control]
+    plugs: [network, avahi-control, home]
   lpstat:
     command: lpstat
     plugs: [network, avahi-control]
   lpoptions:
     command: lpoptions
-    plugs: [network, avahi-control]
+    plugs: [network, avahi-control, home]
   lp:
     command: lp
-    plugs: [network, avahi-control]
+    plugs: [network, avahi-control, home]
   cancel:
     command: cancel
     plugs: [network, avahi-control]
@@ -40,7 +40,7 @@ apps:
     plugs: [network, avahi-control]
   cupsfilter:
     command: cupsfilter
-    plugs: [network, avahi-control]
+    plugs: [network, avahi-control, home]
   #mutool:
   #  command: ./usr/bin/mutool
 
@@ -50,10 +50,16 @@ parts:
     plugin: autotools
     prepare: |
         patch -p0 < ../../../cupsd-pass-on-ld-library-path.patch
+        patch -p0 < ../../../cupsd-pass-on-path.patch
+        patch -p0 < ../../../cupsd-allow-root-as-cups-user.patch
+        patch -p0 < ../../../cupsd-allow-group-and-systemgroup-be-the-same.patch
+        patch -p0 < ../../../libcups-do-not-read-cupsd-conf-from-local-file.patch
         sed -i 's|$(DSTROOT)|'"${SNAPCRAFT_PART_INSTALL}"'|g' Make*
         sed -i 's|fchown(cupsFileNumber(fp), getuid(), Group)|0|g' scheduler/file.c
         sed -i 's|(fchmod(cupsFileNumber(fp), mode))|(0)|g' scheduler/file.c
         sed -i 's|chown(filename, user, group)|0|g' scheduler/conf.c
+        sed -i 's|setgroups(1, &Group)|0|g' scheduler/process.c
+        sed -i 's|setgroups(1, &gid)|0|g' scheduler/cups-exec.c
         sed -i 's|fchown(|// fchown(|g' cups/*.c
         sed -i 's|chown(|// chown(|g' cups/*.c
         sed -i 's|fchmod(|// fchmod(|g' cups/*.c

@@ -1,0 +1,20 @@
+--- cups/adminutil.c.orig	2017-11-01 12:57:53.000000000 -0200
++++ cups/adminutil.c	2017-11-16 16:05:52.355213390 -0200
+@@ -2191,7 +2191,7 @@
+   snprintf(name, namesize, "%s/cupsd.conf", cg->cups_serverroot);
+   *remote = 0;
+ 
+-#ifndef WIN32
++#if 0
+   if (!_cups_strcasecmp(host, "localhost") && !access(name, R_OK))
+   {
+    /*
+@@ -2218,7 +2218,7 @@
+       status = HTTP_STATUS_OK;
+   }
+   else
+-#endif /* !WIN32 */
++#endif /* 0 */
+   {
+    /*
+     * Read cupsd.conf via a HTTP GET request...
