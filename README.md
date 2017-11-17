@@ -47,6 +47,11 @@ sudo snap connect cups:avahi-control avahi
 ```
 This allows sharing of printers between your system's CUPS and the snap's CUPS. cups-browsed (one instance on the system, one in the snap) automatically creates appropriate queues. Avahi does not yet work completely on snap-based systems as printers on the snap-based system get shared to remote machines but printers on remote machines do not get discovered by the snap-based system.
 
+For USB printer access you need to connect to the raw-usb interface on both classic and snap-based systems:
+```
+sudo snap connect cups:raw-usb
+```
+
 On classic systems the snap has already access to the user's home directory, on a snap-based system you need to run:
 ```
 snap connect cups:home
