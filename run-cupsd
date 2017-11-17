@@ -49,4 +49,7 @@ perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_DATA/etc/cupsd.
 
 # chmod 0640 $SNAP_DATA/etc/cups-files.conf $SNAP_DATA/etc/cupsd.conf
 
+#chmod 711 $SNAP_DATA/var/run/certs/
+#chown root.root $SNAP_DATA/var/run/certs/
+
 $SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf

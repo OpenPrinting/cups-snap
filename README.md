@@ -17,6 +17,8 @@ Note that the snap is still under development and so does not yet fulfill all th
 
 ## Installation and Usage
 
+The printing stack snap works on both classic systems (standard Linux distributions like Ubuntu Desktop) and purely snap-based systems (like Ubuntu Core).
+
 As long as the snap is not yet in the Snap Store, you have to build it via
 
 ```
@@ -31,11 +33,24 @@ sudo snap install --dangerous <file>.snap
 
 with `<file>.snap` being the name of the snap file.
 
-You also need to manually connect the snap to the Avahi interface:
+You also need to manually connect the snap to the Avahi interface. On classic systems run:
 ```
 sudo snap connect cups:avahi-control
 ```
-This allows sharing of printers between your system's CUPS and the snap's CUPS. cups-browsed (one instance on the system, one in the snap) automatically creates appropriate queues.
+On snap-based systems install the Avahi snap at first
+```
+sudo snap install --edge avahi
+```
+and connect to the avahi snap:
+```
+sudo snap connect cups:avahi-control avahi
+```
+This allows sharing of printers between your system's CUPS and the snap's CUPS. cups-browsed (one instance on the system, one in the snap) automatically creates appropriate queues. Avahi does not yet work completely on snap-based systems as printers on the snap-based system get shared to remote machines but printers on remote machines do not get discovered by the snap-based system.
+
+On classic systems the snap has already access to the user's home directory, on a snap-based system you need to run:
+```
+snap connect cups:home
+```
 
 The snap's CUPS runs on port 10631.
 
@@ -45,17 +60,27 @@ cups.lpstat -v
 cups.cupsctl
 cups.lpadmin -p printer -E -v file:/dev/null
 ```
-You can run administrative commands without `sudo` and without getting asked for a password if you are member of the "adm" group (this is the case for the first user created on a classic Ubuntu system). This is a temporary hack until snapd is able to deal with snap-specific users and groups. This should at least work on classic systems. If this does not work, administrative programs have to run as root (for example running them with `sudo`).
+You can run administrative commands without `sudo` and without getting asked for a password if you are member of the "adm" group (this is the case for the first user created on a classic Ubuntu system). This is a temporary hack until snapd is able to deal with snap-specific users and groups. This works on classic systems (you can also add a user to the "adm" group) but not on snap-based systems (the standard user is not in the "adm" group and you cannot add users to the "adm" group). You can always run administrative programs as root (for example running them with `sudo`).
 
-The snap's command line utilities cannot access the user's home directory yet, pipe files from the home directory into the `lp` command to print them:
+The snap's command line utilities can only access files in the calling user's home directory if they are not hidden (name begins with a dot '`.`'). So you can ususally print with a command like
+```
+cups.lp -d <printer> <file>
+```
+For hidden files you have to pipe the file into the command, like with
 ```
 cat <file> | cups.lp -d <printer>
 ```
+or copy or rename the file into a standard file.
+
 The web interface can be accessed under
 ```
 http://localhost:10631/
 ```
-but administrative tasks do not work yet.
+but to make administrative tasks working, you have to run the following commands after installing the snap:
+```
+sudo chmod 711 /var/snap/cups/current/var/run/certs/
+sudo chown root.root /var/snap/cups/current/var/run/certs/
+```
 
 You can also access the snap's CUPS with the system's utilities by specifying the server:
 ```
