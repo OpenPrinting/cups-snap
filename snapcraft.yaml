@@ -97,6 +97,7 @@ parts:
         sed -i 's|fchmod(|// fchmod(|g' scheduler/*.c
     configflags:
         - --with-system-groups=root
+        - --disable-pam
     build-packages:
         - patch
         - autoconf
