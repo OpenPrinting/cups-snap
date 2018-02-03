@@ -91,6 +91,18 @@ You can also access the snap's CUPS with the system's utilities by specifying th
 ```
 lpstat -h localhost:10631 -v
 ```
+NOTE: You can also build this snap for CUPS running on the usual port 631, by editing the file `default.yaml` before building the snap, but on classic systems you can then only use the snap after uninstalling the system's CUPS and cups-browsed.
+
+
+## What is planned/still missing?
+
+* CUPS having its own group ("lpadmin") for administrative tasks, we use "adm" as a workaround.
+* Get it into the Snap Store
+* Auto-connect to all interfaces (avahi, raw-usb, home).
+* Interface for third-party printer driver snaps.
+* Auto-selector for the CUPS port: Check during installation whether there is already a CUPS on port 631 or not.
+* Provide cups-client slot (for systems without their own CUPS).
+
 
 ## Discussion
 
@@ -103,3 +115,7 @@ Related topics on the forum:
 
 * [Multiple users and groups in snaps](https://forum.snapcraft.io/t/multiple-users-and-groups-in-snaps/1461)
 * [Improvements in the content interface](https://forum.snapcraft.io/t/improvements-in-the-content-interface/2387)
+
+Getting the snap into the store:
+
+* [Post a snap on behalf of OpenPrinting](https://forum.snapcraft.io/t/post-a-snap-on-behalf-of-openprinting/3757/1)
