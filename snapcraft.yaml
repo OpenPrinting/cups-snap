@@ -1,7 +1,7 @@
-name: cups
+name: printing-stack-snap
 version: 0.1.0
-summary: CUPS snap
-description: Printing environment accepting distribution-independent printer driver plugins
+summary: CUPS-based printing stack snap
+description: Complete printing environment in a snap
 grade: devel
 confinement: strict
 
