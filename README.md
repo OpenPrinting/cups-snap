@@ -19,7 +19,13 @@ Note that the snap is still under development and so does not yet fulfill all th
 
 The printing stack snap works on both classic systems (standard Linux distributions like Ubuntu Desktop) and purely snap-based systems (like Ubuntu Core).
 
-As long as the snap is not yet in the Snap Store, you have to build it via
+The snap is currently in the Edge channel of the snap store and therefore can be installed via
+
+```
+snap install --edge printing-stack-snap
+```
+
+If you want to install from source, you have to build it via
 
 ```
 snapcraft cleanbuild
