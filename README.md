@@ -108,6 +108,7 @@ NOTE: You can also build this snap for CUPS running on the usual port 631, by ed
 * Interface for third-party printer driver snaps.
 * Auto-selector for the CUPS port: Check during installation whether there is already a CUPS on port 631 or not.
 * Provide cups-client slot (for systems without their own CUPS).
+* Add ippusbxd (for IPP-over-USB) to the snap.
 
 
 ## Discussion
