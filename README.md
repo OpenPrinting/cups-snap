@@ -103,7 +103,6 @@ NOTE: You can also build this snap for CUPS running on the usual port 631, by ed
 ## What is planned/still missing?
 
 * CUPS having its own group ("lpadmin") for administrative tasks, we use "adm" as a workaround.
-* Get it into the Snap Store
 * Auto-connect to all interfaces (avahi, raw-usb, home).
 * Interface for third-party printer driver snaps.
 * Auto-selector for the CUPS port: Check during installation whether there is already a CUPS on port 631 or not.
