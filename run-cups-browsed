@@ -10,14 +10,17 @@ CONF=$SNAP_DATA/etc/cups-browsed.conf
 DAEMON=cups-browsed
 PORT=631
 DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
+CUPSDCONF=$SNAP_DATA/etc/cupsd.conf
 
 LC_ALL=C.UTF-8
 LANG=C.UTF-8
 
-if [ -e $SNAP/default.yaml ]; then
-    PORT=$(grep -A1 cups $SNAP/default.yaml|\
-		  grep port:|sed "s:.*port\: ::")
-fi
+# Wait for our CUPS instance to be started
+while [ ! -e $CUPSDCONF ]; do
+    sleep 1;
+done
+
+PORT=$(grep ^Port $CUPSDCONF | sed "s:Port ::")
 
 cat << EOF > $CONF
 CacheDir $SNAP_DATA/var/cache
@@ -29,4 +32,4 @@ DomainSocket $DOMAINSOCKET
 CreateIPPPrinterQueues Yes
 EOF
 
-IPP_PORT=$PORT CUPS_SERVER=$DOMAINSOCKET $DAEMON -c $CONF
+IPP_PORT=$PORT CUPS_SERVER=$DOMAINSOCKET exec $DAEMON -c $CONF

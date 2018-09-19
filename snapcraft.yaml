@@ -17,6 +17,8 @@ apps:
     command: run-cups-browsed
     daemon: simple
     plugs: [network, network-bind, avahi-control]
+    passthrough:
+      after: [cupsd]
   lpinfo:
     command: lpinfo
     plugs: [network, avahi-control, raw-usb]

@@ -1,0 +1,12 @@
+#!/usr/bin/python3
+import sys
+import socket
+port = int(sys.argv[1])
+occupied = 0
+s = socket.socket()
+try:
+    s.bind(("127.0.0.1", port))
+except socket.error:
+    occupied = 1
+s.close()
+sys.exit(1 - occupied)

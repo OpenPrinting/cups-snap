@@ -1,2 +1,2 @@
 cups:
-  port: 10631
+  altport: 10631

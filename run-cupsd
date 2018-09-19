@@ -19,18 +19,26 @@ DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
 LC_ALL=C.UTF-8
 LANG=C.UTF-8
 
-cp -r $SNAP/etc/cups/. $SNAP_DATA/etc/
+cp $SNAP/etc/cups/cupsd.conf $SNAP_DATA/etc/
+cp $SNAP/etc/cups/cups-files.conf $SNAP_DATA/etc/
+cp $SNAP/etc/cups/snmp.conf $SNAP_DATA/etc/
+cp -r $SNAP/etc/cups/ppd $SNAP_DATA/etc/
+cp -r $SNAP/etc/cups/ssl $SNAP_DATA/etc/
 cat $CUPSFILESCONF | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)/:\1\2'"$SNAP"'/:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/var/(\S*?)/cups(.*)$:\1\2'"$SNAP_DATA"'/var/\3\4:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/etc:\1\2'"$SNAP_DATA"'/etc\3\5:g' | perl -p -e 's:/etc/cups:/etc:g' | perl -p -e 's:^(\s*)\#?(User|Group)(\s+)\S+:\1\2\3root:g' | perl -p -e 's:^(\s*)\#?(SystemGroup\s+)\S+:\1\2\3root adm:g' > $SNAP_DATA/etc/cups-files.conf
 cat $CUPSDCONF | grep -v 'Listen' | perl -p -e 's:^(\s*<Location\s*/>\s*)$:$1  Allow \@LOCAL\n:' > $SNAP_DATA/etc/cupsd.conf
 
-if [ -e $SNAP/default.yaml ]; then
-    PORT=$(grep -A1 cups $SNAP/default.yaml|\
-		  grep port:|sed "s:.*port\: ::")
-    cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_DATA/etc/cupsd.conf.new && \
-	echo Port $PORT > $SNAP_DATA/etc/cupsd.conf && \
-	cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
-	rm $SNAP_DATA/etc/cupsd.conf.new
+if $SNAP/port-occupied $PORT; then
+    # CUPS already running (Debian packages), try alternative port
+    if [ -e $SNAP/default.yaml ]; then
+	PORT=$(grep -A1 cups $SNAP/default.yaml|\
+		   grep altport:|sed "s:.*altport\: ::")
+    fi
 fi
+
+cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_DATA/etc/cupsd.conf.new && \
+    echo Port $PORT > $SNAP_DATA/etc/cupsd.conf && \
+    cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
+    rm $SNAP_DATA/etc/cupsd.conf.new
 
 cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen > $SNAP_DATA/etc/cupsd.conf.new && \
     echo Listen $DOMAINSOCKET > $SNAP_DATA/etc/cupsd.conf && \
@@ -52,4 +60,4 @@ perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_DATA/etc/cupsd.
 #chmod 711 $SNAP_DATA/var/run/certs/
 #chown root.root $SNAP_DATA/var/run/certs/
 
-$SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf
+exec $SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf
