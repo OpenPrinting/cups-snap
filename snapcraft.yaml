@@ -76,7 +76,7 @@ apps:
 
 parts:
   cups:
-    source: https://github.com/apple/cups/releases/download/v2.2.6/cups-2.2.6-source.tar.gz
+    source: https://github.com/apple/cups/releases/download/v2.2.8/cups-2.2.8-source.tar.gz
     plugin: autotools
     prepare: |
         patch -p0 < ../../../cupsd-pass-on-ld-library-path.patch
@@ -133,8 +133,14 @@ parts:
         - sharutils
         - zlib1g-dev
         - wget
+  qpdf:
+    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-8.2.1/qpdf-8.2.1.tar.gz
+    plugin: autotools
+    build-packages:
+        - libjpeg-dev
+        - zlib1g-dev
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.17.9.tar.xz
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.21.2.tar.xz
     plugin: autotools
     configflags:
         - --with-pdftops=pdftops
@@ -151,7 +157,6 @@ parts:
         - libldap2-dev
         - libpoppler-private-dev
         - libpoppler-cpp-dev
-        - libqpdf-dev
         - libjpeg-dev
         - libpng-dev
         - libtiff5-dev
@@ -167,7 +172,7 @@ parts:
         - fonts-dejavu-core
     stage-packages:
         - poppler-utils
-    after: [cups]
+    after: [cups, qpdf]
   selected-fonts: # Temporary, fonts shpuld come from the system
     plugin: dump
     #source: /usr/share/fonts
