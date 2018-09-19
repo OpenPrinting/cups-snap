@@ -133,6 +133,10 @@ parts:
         - sharutils
         - zlib1g-dev
         - wget
+    stage-packages:
+        - libusb-1.0-0
+        - libavahi-common3
+        - libavahi-client3
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-8.2.1/qpdf-8.2.1.tar.gz
     plugin: autotools
@@ -172,6 +176,19 @@ parts:
         - fonts-dejavu-core
     stage-packages:
         - poppler-utils
+        - libasn1-8-heimdal
+        - libavahi-glib1
+        - libgssapi3-heimdal
+        - libhcrypto4-heimdal
+        - libheimbase1-heimdal
+        - libheimntlm0-heimdal
+        - libhx509-5-heimdal
+        - libkrb5-26-heimdal
+        - libldap-2.4-2
+        - libroken18-heimdal
+        - libsasl2-2
+        - libwind0-heimdal
+        - libdb5.3
     after: [cups, qpdf]
   selected-fonts: # Temporary, fonts shpuld come from the system
     plugin: dump
