@@ -16,7 +16,8 @@ LC_ALL=C.UTF-8
 LANG=C.UTF-8
 
 # Wait for our CUPS instance to be started
-while [ ! -e $CUPSDCONF ]; do
+while [ ! -e $CUPSDCONF ] || \
+        ! grep -q ^Port $CUPSDCONF; do
     sleep 1;
 done
 
