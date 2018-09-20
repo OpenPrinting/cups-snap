@@ -1,6 +1,6 @@
 #! /bin/sh
 
-set -e
+set -e -x
 
 mkdir -p $SNAP_DATA/var/log
 mkdir -p $SNAP_DATA/var/cache
