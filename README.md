@@ -11,13 +11,16 @@ This snap is designed for the following three use cases:
 
 1. Providing a printing stack for a purely snap-based operating system, like Ubuntu Core.
 2. Providing a printing stack for a classic Linux system, installing the snap instead of the system's usual printing packages.
-3. Providing an interface for snaps containing printer drivers. If the user wants to stay with the system's printing stack, the snap runs CUPS in parallel, on an alternative port and shares its print queues to the system's CUPS, as they were a driverless IPP printers.
 
 Note that the snap is still under development and so does not yet fulfill all the design goals.
 
 ## Installation and Usage
 
 The printing stack snap works on both classic systems (standard Linux distributions like Ubuntu Desktop) and purely snap-based systems (like Ubuntu Core).
+
+If on your classic system there is already CUPS running, you do not neccessarily need to stop or remove this CUPS for using the snap. The snap's CUPS will run on port 10631 (instead of port 631) then. So you can have two CUPS instances (each with their own cups-browsed) on one system, for example for development.
+
+Note that running two CUPS instances on one system is not recommended on production systems. Disable or remove your system's CUPS if you want to use the snap's CUPS.
 
 The snap is currently in the Edge channel of the snap store and therefore can be installed via
 
@@ -63,7 +66,7 @@ On classic systems the snap has already access to the user's home directory, on 
 snap connect printing-stack-snap:home
 ```
 
-The snap's CUPS runs on port 10631.
+If there is already a CUPS instance running on your system, The snap's CUPS will run on port 10631.
 
 To use use the snap's command line utilities acting on the snap's CUPS, preceed the commands with `printing-stack-snap.`:
 ```
@@ -89,25 +92,31 @@ http://localhost:10631/
 ```
 but to make administrative tasks working, you have to run the following commands after installing the snap:
 ```
-sudo chmod 711 /var/snap/cups/current/var/run/certs/
-sudo chown root.root /var/snap/cups/current/var/run/certs/
+sudo chmod 711 /var/snap/printing-stack-snap/current/var/run/certs/
+sudo chown root.root /var/snap/printing-stack-snap/current/var/run/certs/
 ```
 
-You can also access the snap's CUPS with the system's utilities by specifying the server:
+You can also access the snap's CUPS with the system's utilities by specifying the server (example if the snap's CUPS runs in parallel with a system's one, on port 10631):
 ```
 lpstat -h localhost:10631 -v
 ```
-NOTE: You can also build this snap for CUPS running on the usual port 631, by editing the file `default.yaml` before building the snap, but on classic systems you can then only use the snap after uninstalling the system's CUPS and cups-browsed.
+NOTE: You can also build this snap for CUPS' alternative port being any other than 10631, by editing the file `default.yaml` before building the snap.
 
 
 ## What is planned/still missing?
 
 * CUPS having its own group ("lpadmin") for administrative tasks, we use "adm" as a workaround.
 * Auto-connect to all interfaces (avahi, raw-usb, home).
-* Interface for third-party printer driver snaps.
-* Auto-selector for the CUPS port: Check during installation whether there is already a CUPS on port 631 or not.
-* Provide cups-client slot (for systems without their own CUPS).
 * Add ippusbxd (for IPP-over-USB) to the snap.
+
+
+## Change on design goals: Printer drivers deprecated -> Printer Applications
+
+Printer drivers (printer-model-specific software and/or data) in the form of filters and PPD files added to CUPS are deprecated. They get replaced by Printer Applications, simple daemons which emulate a driverless IPP printer on localhost and do the filtering of the incoming jobs and connection to the printer.
+
+Therefore we will not add a printer driver interface as it is not needed any more.
+
+See "Printer Applications" below.
 
 
 ## Discussion
@@ -115,13 +124,18 @@ NOTE: You can also build this snap for CUPS running on the usual port 631, by ed
 The development of this snap is discussed on the Snapcraft forum:
 
 * [General development](https://forum.snapcraft.io/t/snapping-cups-printing-stack-avahi-support-system-users-groups/1502)
-* [Printer driver plugin snaps](https://forum.snapcraft.io/t/snapping-cups-drivers-as-plugins/1503)
+* [Developer sprint Sep 17th, 2018](https://forum.snapcraft.io/t/developer-sprint-sep-17th-2018/7336)
 
 Related topics on the forum:
 
 * [Multiple users and groups in snaps](https://forum.snapcraft.io/t/multiple-users-and-groups-in-snaps/1461)
-* [Improvements in the content interface](https://forum.snapcraft.io/t/improvements-in-the-content-interface/2387)
 
 Getting the snap into the store:
 
+* [Call for testing: OpenPrinting’s printing-stack-snap (Printing in a Snap)](https://forum.snapcraft.io/t/call-for-testing-openprintings-printing-stack-snap-printing-in-a-snap/4406)
 * [Post a snap on behalf of OpenPrinting](https://forum.snapcraft.io/t/post-a-snap-on-behalf-of-openprinting/3757/1)
+
+Printer Applications
+
+* [CUPS, page 28, 29](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-may-18.pdf)
+* [cups-filters, page 11](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2018.pdf)
