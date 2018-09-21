@@ -143,3 +143,7 @@ Printer Applications
 Snapping of ippusbxd
 
 * [Feature request: Support for systemd templates](https://forum.snapcraft.io/t/feature-request-support-for-systemd-templates/)
+
+Request for auto-connection to interfaces
+
+* [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
