@@ -107,7 +107,7 @@ NOTE: You can also build this snap for CUPS' alternative port being any other th
 
 * CUPS having its own group ("lpadmin") for administrative tasks, we use "adm" as a workaround.
 * Auto-connect to all interfaces (avahi, raw-usb, home).
-* Add ippusbxd (for IPP-over-USB) to the snap.
+* Add ippusbxd (for IPP-over-USB) to the snap (or snap it separately).
 
 
 ## Change on design goals: Printer drivers deprecated -> Printer Applications
@@ -139,3 +139,7 @@ Printer Applications
 
 * [CUPS (PDF, page 28, 29)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-may-18.pdf)
 * [cups-filters (PDF, page 11)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2018.pdf)
+
+Snapping of ippusbxd
+
+* [Feature request: Support for systemd templates](https://forum.snapcraft.io/t/feature-request-support-for-systemd-templates/)
