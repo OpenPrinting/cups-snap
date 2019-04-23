@@ -4,7 +4,7 @@ Complete CUPS printing stack in a snap
 
 ## Introduction
 
-This is a coplete printing stack in a snap. It contains not only CUPS but also cups-filters and Poppler (as the PDF interpreter). This is
+This is a complete printing stack in a snap. It contains not only CUPS but also cups-filters and Poppler (as the PDF interpreter). This is
 everything (except printer-model-specific drivers) which is needed for printing.
 
 This snap is designed for the following three use cases:
