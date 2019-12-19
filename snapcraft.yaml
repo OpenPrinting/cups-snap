@@ -190,23 +190,18 @@ parts:
         - libdb5.3
     after: [cups, qpdf]
   selected-fonts: # Temporary, fonts shpuld come from the system
-    plugin: dump
-    #source: /usr/share/fonts
+    plugin: nil
+    source: .
     stage-packages:
         - fonts-freefont-ttf
-        - fontconfig-config
     prime:
         - usr/share/fonts/*
-        - etc/fonts/fonts.conf
-    organize: # see lp#1588283
-     /usr/share/fonts/truetype/freefont/*.ttf: usr/share/cups/fonts/
-     #/etc/fonts/fonts.conf: etc/fonts/fonts.conf
+    override-stage: |
+        mkdir -p $SNAPCRAFT_STAGE/usr/share/cups/fonts/
+        cp /usr/share/fonts/truetype/freefont/*.ttf $SNAPCRAFT_STAGE/usr/share/cups/fonts/
+        snapcraftctl stage
   copy:
-    plugin: dump
-    #organize:
-      #run-cupsd: run-cupsd
-      #run-cups-browsed: run-cups-browsed
-      #default.yaml: default.yaml
+    plugin: nil
     stage-packages:
         - perl-base
         - sed
