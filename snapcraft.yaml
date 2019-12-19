@@ -1,4 +1,5 @@
 name: printing-stack-snap
+base: core18 # The base snap is the execution environment for this snap
 version: 0.1.0
 summary: CUPS-based printing stack snap
 description: Complete printing environment in a snap
@@ -48,10 +49,10 @@ apps:
     command: cupsreject
     plugs: [network, avahi-control]
   accept:
-    command: accept
+    command: cupsaccept
     plugs: [network, avahi-control]
   reject:
-    command: reject
+    command: cupsreject
     plugs: [network, avahi-control]
   cupsctl:
     command: cupsctl
@@ -62,28 +63,34 @@ apps:
   cupstestppd:
     command: cupstestppd
     plugs: [network, avahi-control, home]
-  cupstestdsc:
-    command: cupstestdsc
-    plugs: [network, avahi-control, home]
   ipptool:
     command: ipptool
     plugs: [network, avahi-control, home]
   ippfind:
     command: ippfind
     plugs: [network, avahi-control]
+  ippeveprinter:
+    command: ippeveprinter
+    plugs: [network, network-bind, avahi-control, home, raw-usb]
 
 parts:
+  cups-patches:
+    plugin: dump
+    source: patches
+    organize:
+      '*' : patches/
+    override-prime: ""
   cups:
     source: https://github.com/apple/cups/releases/download/v2.3.1/cups-2.3.1-source.tar.gz
     plugin: autotools
     override-build: |
-        patch -p0 < ../../../cupsd-pass-on-ld-library-path.patch
-        patch -p0 < ../../../cupsd-pass-on-path.patch
-        patch -p0 < ../../../cupsd-allow-root-as-cups-user.patch
-        patch -p0 < ../../../cupsd-allow-group-and-systemgroup-be-the-same.patch
-        patch -p0 < ../../../libcups-do-not-read-cupsd-conf-from-local-file.patch
-        patch -p0 < ../../../cups-deviced-allow-run-by-root.patch
-        sed -i 's|$(DSTROOT)|'"${SNAPCRAFT_PART_INSTALL}"'|g' Make*
+        set -eux
+        patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-pass-on-ld-library-path.patch
+        patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-pass-on-path.patch
+        patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-allow-root-as-cups-user.patch
+        patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-allow-group-and-systemgroup-be-the-same.patch
+        patch -p0 < $SNAPCRAFT_STAGE/patches/libcups-do-not-read-cupsd-conf-from-local-file.patch
+        patch -p0 < $SNAPCRAFT_STAGE/patches/cups-deviced-allow-run-by-root.patch
         sed -i 's|fchown(cupsFileNumber(fp), getuid(), Group)|0|g' scheduler/file.c
         sed -i 's|(fchmod(cupsFileNumber(fp), mode))|(0)|g' scheduler/file.c
         sed -i 's|chown(filename, user, group)|0|g' scheduler/conf.c
@@ -136,6 +143,7 @@ parts:
         - libusb-1.0-0
         - libavahi-common3
         - libavahi-client3
+    after: [cups-patches]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-9.1.0/qpdf-9.1.0.tar.gz
     plugin: autotools
@@ -175,6 +183,7 @@ parts:
         - fonts-dejavu-core
     stage-packages:
         - poppler-utils
+        - libpoppler-cpp0v5
         - libasn1-8-heimdal
         - libavahi-glib1
         - libgssapi3-heimdal
@@ -189,19 +198,20 @@ parts:
         - libwind0-heimdal
         - libdb5.3
     after: [cups, qpdf]
-  selected-fonts: # Temporary, fonts shpuld come from the system
+  selected-fonts: # Temporary, fonts should come from the system
     plugin: nil
     source: .
     stage-packages:
         - fonts-freefont-ttf
     prime:
-        - usr/share/fonts/*
+        - share/cups/fonts/*
     override-stage: |
-        mkdir -p $SNAPCRAFT_STAGE/usr/share/cups/fonts/
-        cp /usr/share/fonts/truetype/freefont/*.ttf $SNAPCRAFT_STAGE/usr/share/cups/fonts/
         snapcraftctl stage
+        mkdir -p $SNAPCRAFT_STAGE/share/cups/fonts/
+        cp $SNAPCRAFT_STAGE/usr/share/fonts/truetype/freefont/*.ttf $SNAPCRAFT_STAGE/share/cups/fonts/
   copy:
-    plugin: nil
+    plugin: dump
+    source: .
     stage-packages:
         - perl-base
         - sed
