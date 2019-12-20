@@ -28,7 +28,6 @@ CacheDir $SNAP_DATA/var/cache
 LogDir $SNAP_DATA/var/log
 DebugLogging file
 BrowseRemoteProtocols dnssd cups
-IPBasedDeviceURIs IPv4
 DomainSocket $DOMAINSOCKET
 CreateIPPPrinterQueues Yes
 EOF
