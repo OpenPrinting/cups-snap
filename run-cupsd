@@ -49,7 +49,7 @@ cat $FONTSCONF | perl -p -e 's:(<dir>)(/):$1'"$SNAP"'$2:' | perl -p -e 's:(<cach
 
 export FONTCONFIG_FILE=$SNAP_DATA/etc/fonts/fonts.conf
 
-echo PassEnv FONTCONFIG_FILE >> $SNAP_DATA/etc/cupsd.conf
+echo PassEnv FONTCONFIG_FILE >> $SNAP_DATA/etc/cups-files.conf
 
 echo MaxLogSize 9999999 >> $SNAP_DATA/etc/cupsd.conf
 
