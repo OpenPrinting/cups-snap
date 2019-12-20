@@ -72,6 +72,9 @@ apps:
   ippeveprinter:
     command: ippeveprinter
     plugs: [network, network-bind, avahi-control, home, raw-usb]
+  gs:
+    command: gs
+    plugs: [home]
 
 parts:
   cups-patches:
@@ -150,12 +153,23 @@ parts:
     build-packages:
         - libjpeg-dev
         - zlib1g-dev
+  ghostscript:
+    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs950/ghostscript-9.50.tar.gz
+    plugin: autotools
+    configflags:
+        - --without-x
+        - --disable-gtk
+        - --with-drivers=ALL
+        - --enable-cups
+    # Should be only this, but does not build:
+    #    - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
+    stage-packages:
+        - libpaper1
+    after: [cups]
   cups-filters:
     source: http://www.openprinting.org/download/cups-filters/cups-filters-1.26.0.tar.xz
     plugin: autotools
     configflags:
-        - --with-pdftops=pdftops
-        - --disable-ghostscript
         - --disable-mutool
     build-packages:
         - autoconf
@@ -197,7 +211,7 @@ parts:
         - libsasl2-2
         - libwind0-heimdal
         - libdb5.3
-    after: [cups, qpdf]
+    after: [cups, qpdf, ghostscript]
   selected-fonts: # Temporary, fonts should come from the system
     plugin: nil
     source: .
