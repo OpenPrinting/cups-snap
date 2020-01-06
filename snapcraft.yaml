@@ -159,10 +159,12 @@ parts:
     configflags:
         - --without-x
         - --disable-gtk
-        - --with-drivers=ALL
+        - --with-drivers=page,pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
         - --enable-cups
-    # Should be only this, but does not build:
-    #    - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
+    # The "page" added to the drivers list is a workaround for a missing
+    # dependency in the Makefiles. See
+    # https://bugs.ghostscript.com/show_bug.cgi?id=702019
+    # This is fixed and the fix will be in Ghostscript 9.51 and later
     stage-packages:
         - libpaper1
     after: [cups]
