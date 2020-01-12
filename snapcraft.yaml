@@ -111,6 +111,7 @@ parts:
     configflags:
         - --with-system-groups=root
         - --disable-pam
+        #- --enable-debug-printfs
     build-packages:
         - patch
         - autoconf

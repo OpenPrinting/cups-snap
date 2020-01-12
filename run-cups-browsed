@@ -12,8 +12,35 @@ PORT=631
 DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
 CUPSDCONF=$SNAP_DATA/etc/cupsd.conf
 
-LC_ALL=C.UTF-8
-LANG=C.UTF-8
+# Set UTF-8
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
+# Set a general TMPDIR
+TMPDIR=$SNAP_DATA/tmp
+mkdir -p $TMPDIR
+
+# Activate debug logging of the libcups used by cups-browsed
+# (Needs "- --enable-debug-printfs" be uncommented in CUPS' configflags
+#  in snapcraft.yaml)
+#export CUPS_DEBUG_LOG=$SNAP_DATA/var/log/cups-browsed-debug_log
+#export CUPS_DEBUG_LEVEL=99
+
+# Set paths to CUPS resources in the CUPS snap for libcups used by
+# cups-browsed. This is usually not needed, only to work around CUPS
+# bugs.
+
+# Currently. we set CUPS_SERVERROOT, to work around cupsGetPPD3() not
+# working with non-standard (!= 631) port
+
+#export CUPS_CACHEDIR=$SNAP_DATA/var/cache
+#export CUPS_DATADIR=$SNAP_DATA/share/cups
+#export CUPS_DOCROOT=$SNAP_DATA/share/doc/cups
+#export CUPS_FONTPATH=$SNAP_DATA/share/cups/fonts
+#export CUPS_REQUESTROOT=$SNAP_DATA/var/spool
+#export CUPS_SERVERBIN=$SNAP_DATA/lib/cups
+export CUPS_SERVERROOT=$SNAP_DATA/etc
+#export CUPS_STATEDIR=$SNAP_DATA/var/run
 
 # Wait for our CUPS instance to be started
 while [ ! -e $CUPSDCONF ] || \
