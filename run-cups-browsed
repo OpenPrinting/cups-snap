@@ -39,7 +39,7 @@ mkdir -p $TMPDIR
 #export CUPS_FONTPATH=$SNAP_DATA/share/cups/fonts
 #export CUPS_REQUESTROOT=$SNAP_DATA/var/spool
 #export CUPS_SERVERBIN=$SNAP_DATA/lib/cups
-export CUPS_SERVERROOT=$SNAP_DATA/etc
+#export CUPS_SERVERROOT=$SNAP_DATA/etc
 #export CUPS_STATEDIR=$SNAP_DATA/var/run
 
 # Wait for our CUPS instance to be started
