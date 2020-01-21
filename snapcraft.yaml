@@ -94,6 +94,7 @@ parts:
         patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-allow-group-and-systemgroup-be-the-same.patch
         patch -p0 < $SNAPCRAFT_STAGE/patches/libcups-do-not-read-cupsd-conf-from-local-file.patch
         patch -p0 < $SNAPCRAFT_STAGE/patches/cups-deviced-allow-run-by-root.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         sed -i 's|fchown(cupsFileNumber(fp), getuid(), Group)|0|g' scheduler/file.c
         sed -i 's|(fchmod(cupsFileNumber(fp), mode))|(0)|g' scheduler/file.c
         sed -i 's|chown(filename, user, group)|0|g' scheduler/conf.c
