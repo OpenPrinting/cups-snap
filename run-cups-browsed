@@ -42,13 +42,21 @@ mkdir -p $TMPDIR
 #export CUPS_SERVERROOT=$SNAP_DATA/etc
 #export CUPS_STATEDIR=$SNAP_DATA/var/run
 
-# Wait for our CUPS instance to be started
-while [ ! -e $CUPSDCONF ] || \
-        ! grep -q ^Port $CUPSDCONF; do
-    sleep 1;
-done
+if $SNAP/port-occupied $PORT; then
+    # CUPS already running (Debian packages), try alternative port
+    if [ -e $SNAP/default.yaml ]; then
+	PORT=$(grep -A1 cups $SNAP/default.yaml|\
+		   grep altport:|sed "s:.*altport\: ::")
+    fi
+fi
 
-PORT=$(grep ^Port $CUPSDCONF | sed "s:Port ::")
+# Wait for our CUPS instance to be started
+#while [ ! -e $CUPSDCONF ] || \
+#        ! grep -q ^Port $CUPSDCONF; do
+#    sleep 1;
+#done
+#
+#PORT=$(grep ^Port $CUPSDCONF | sed "s:Port ::")
 
 cat << EOF > $CONF
 CacheDir $SNAP_DATA/var/cache
