@@ -67,4 +67,11 @@ DomainSocket $DOMAINSOCKET
 CreateIPPPrinterQueues Yes
 EOF
 
-IPP_PORT=$PORT CUPS_SERVER=$DOMAINSOCKET exec $DAEMON -c $CONF
+# Spawn cups-browsed in a way that we can grab its PID
+mkdir -p "${SNAP_COMMON}/pid"
+IPP_PORT=$PORT CUPS_SERVER=$DOMAINSOCKET exec $DAEMON -c $CONF &
+PID=$!
+echo ${PID} > "${SNAP_COMMON}/pid/cups-browsed.pid"
+
+# Keep this script running until cups-browsed terminates
+wait ${PID}

@@ -24,10 +24,12 @@ plugs:
 apps:
   cupsd:
     command: run-cupsd
+    stop-command: stop-cupsd
     daemon: simple
     plugs: [network, network-bind, avahi-control, raw-usb, system-config]
   cups-browsed:
     command: run-cups-browsed
+    stop-command: stop-cups-browsed
     daemon: simple
     plugs: [network, network-bind, avahi-control, system-config]
   lpinfo:

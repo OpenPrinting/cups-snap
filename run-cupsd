@@ -71,4 +71,11 @@ perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_DATA/etc/cupsd.
 #chmod 711 $SNAP_DATA/var/run/certs/
 #chown root.root $SNAP_DATA/var/run/certs/
 
-exec $SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf
+# Spawn cupsd in a way that we can grab its PID
+mkdir -p "${SNAP_COMMON}/pid"
+exec $SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf &
+PID=$!
+echo ${PID} > "${SNAP_COMMON}/pid/cupsd.pid"
+
+# Keep this script running until cupsd terminates
+wait ${PID}
