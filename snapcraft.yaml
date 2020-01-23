@@ -25,11 +25,15 @@ apps:
   cupsd:
     command: run-cupsd
     stop-command: stop-cupsd
+    reload-command: reload-cupsd
+    restart-condition: always
     daemon: simple
     plugs: [network, network-bind, avahi-control, raw-usb, system-config]
   cups-browsed:
     command: run-cups-browsed
     stop-command: stop-cups-browsed
+    reload-command: reload-cups-browsed
+    restart-condition: always
     daemon: simple
     plugs: [network, network-bind, avahi-control, system-config]
   lpinfo:
