@@ -189,7 +189,7 @@ parts:
         - libpaper1
     after: [cups]
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.26.2.tar.xz
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.0.tar.xz
     plugin: autotools
     configflags:
         - --disable-mutool

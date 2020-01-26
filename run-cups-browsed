@@ -8,7 +8,6 @@ mkdir -p $SNAP_DATA/etc
 
 CONF=$SNAP_DATA/etc/cups-browsed.conf
 DAEMON=cups-browsed
-PORT=631
 DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
 CUPSDCONF=$SNAP_DATA/etc/cupsd.conf
 
@@ -30,9 +29,6 @@ mkdir -p $TMPDIR
 # cups-browsed. This is usually not needed, only to work around CUPS
 # bugs.
 
-# Currently. we set CUPS_SERVERROOT, to work around cupsGetPPD3() not
-# working with non-standard (!= 631) port
-
 #export CUPS_CACHEDIR=$SNAP_DATA/var/cache
 #export CUPS_DATADIR=$SNAP_DATA/share/cups
 #export CUPS_DOCROOT=$SNAP_DATA/share/doc/cups
@@ -41,22 +37,6 @@ mkdir -p $TMPDIR
 #export CUPS_SERVERBIN=$SNAP_DATA/lib/cups
 #export CUPS_SERVERROOT=$SNAP_DATA/etc
 #export CUPS_STATEDIR=$SNAP_DATA/var/run
-
-if $SNAP/port-occupied $PORT; then
-    # CUPS already running (Debian packages), try alternative port
-    if [ -e $SNAP/default.yaml ]; then
-	PORT=$(grep -A1 cups $SNAP/default.yaml|\
-		   grep altport:|sed "s:.*altport\: ::")
-    fi
-fi
-
-# Wait for our CUPS instance to be started
-#while [ ! -e $CUPSDCONF ] || \
-#        ! grep -q ^Port $CUPSDCONF; do
-#    sleep 1;
-#done
-#
-#PORT=$(grep ^Port $CUPSDCONF | sed "s:Port ::")
 
 cat << EOF > $CONF
 CacheDir $SNAP_DATA/var/cache
@@ -69,7 +49,7 @@ EOF
 
 # Spawn cups-browsed in a way that we can grab its PID
 mkdir -p "${SNAP_COMMON}/pid"
-IPP_PORT=$PORT CUPS_SERVER=$DOMAINSOCKET exec $DAEMON -c $CONF &
+exec $DAEMON -c $CONF &
 PID=$!
 echo ${PID} > "${SNAP_COMMON}/pid/cups-browsed.pid"
 
