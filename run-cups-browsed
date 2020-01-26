@@ -4,12 +4,12 @@ set -e -x
 
 mkdir -p $SNAP_DATA/var/log
 mkdir -p $SNAP_DATA/var/cache
-mkdir -p $SNAP_DATA/etc
+mkdir -p $SNAP_DATA/var/run
+mkdir -p $SNAP_COMMON/etc
 
-CONF=$SNAP_DATA/etc/cups-browsed.conf
+CONF=$SNAP_COMMON/etc/cups-browsed.conf
 DAEMON=cups-browsed
 DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
-CUPSDCONF=$SNAP_DATA/etc/cupsd.conf
 
 # Set UTF-8
 export LC_ALL=C.UTF-8
@@ -35,7 +35,7 @@ mkdir -p $TMPDIR
 #export CUPS_FONTPATH=$SNAP_DATA/share/cups/fonts
 #export CUPS_REQUESTROOT=$SNAP_DATA/var/spool
 #export CUPS_SERVERBIN=$SNAP_DATA/lib/cups
-#export CUPS_SERVERROOT=$SNAP_DATA/etc
+#export CUPS_SERVERROOT=$SNAP_COMMON/etc
 #export CUPS_STATEDIR=$SNAP_DATA/var/run
 
 cat << EOF > $CONF
@@ -48,10 +48,9 @@ CreateIPPPrinterQueues Yes
 EOF
 
 # Spawn cups-browsed in a way that we can grab its PID
-mkdir -p "${SNAP_COMMON}/pid"
 exec $DAEMON -c $CONF &
 PID=$!
-echo ${PID} > "${SNAP_COMMON}/pid/cups-browsed.pid"
+echo $PID > $SNAP_DATA/var/run/cups-browsed.pid
 
 # Keep this script running until cups-browsed terminates
-wait ${PID}
+wait $PID

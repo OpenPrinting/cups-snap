@@ -6,8 +6,8 @@ mkdir -p $SNAP_DATA/var/spool/tmp
 mkdir -p $SNAP_DATA/var/run/certs
 mkdir -p $SNAP_DATA/var/log
 mkdir -p $SNAP_DATA/var/cache/fontconfig
-mkdir -p $SNAP_DATA/etc/ppd
-mkdir -p $SNAP_DATA/etc/fonts
+mkdir -p $SNAP_COMMON/etc/ppd
+mkdir -p $SNAP_COMMON/etc/fonts
 
 CUPSFILESCONF=$SNAP/etc/cups/cups-files.conf
 CUPSDCONF=$SNAP/etc/cups/cupsd.conf
@@ -30,13 +30,11 @@ mkdir -p $TMPDIR
 #export CUPS_DEBUG_LOG=$SNAP_DATA/var/log/debug_log
 #export CUPS_DEBUG_LEVEL=99
 
-cp $SNAP/etc/cups/cupsd.conf $SNAP_DATA/etc/
-cp $SNAP/etc/cups/cups-files.conf $SNAP_DATA/etc/
-cp $SNAP/etc/cups/snmp.conf $SNAP_DATA/etc/
-cp -r $SNAP/etc/cups/ppd $SNAP_DATA/etc/
-cp -r $SNAP/etc/cups/ssl $SNAP_DATA/etc/
-cat $CUPSFILESCONF | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)/:\1\2'"$SNAP"'/:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/var/(\S*?)/cups(.*)$:\1\2'"$SNAP_DATA"'/var/\3\4:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/etc:\1\2'"$SNAP_DATA"'/etc\3\5:g' | perl -p -e 's:/etc/cups:/etc:g' | perl -p -e 's:^(\s*)\#?(User|Group)(\s+)\S+:\1\2\3root:g' | perl -p -e 's:^(\s*)\#?(SystemGroup\s+)\S+:\1\2\3root adm:g' > $SNAP_DATA/etc/cups-files.conf
-cat $CUPSDCONF | grep -v 'Listen' | perl -p -e 's:^(\s*<Location\s*/>\s*)$:$1  Allow \@LOCAL\n:' > $SNAP_DATA/etc/cupsd.conf
+cp $SNAP/etc/cups/snmp.conf $SNAP_COMMON/etc/
+cp -r $SNAP/etc/cups/ppd $SNAP_COMMON/etc/
+cp -r $SNAP/etc/cups/ssl $SNAP_COMMON/etc/
+cat $CUPSFILESCONF | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)/:\1\2'"$SNAP"'/:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/var/(\S*?)/cups(.*)$:\1\2'"$SNAP_DATA"'/var/\3\4:g' | perl -p -e 's:^(\s*)\#?(\s*\S+\s+)\S*/etc:\1\2'"$SNAP_COMMON"'/etc\3\5:g' | perl -p -e 's:/etc/cups:/etc:g' | perl -p -e 's:^(\s*)\#?(User|Group)(\s+)\S+:\1\2\3root:g' | perl -p -e 's:^(\s*)\#?(SystemGroup\s+)\S+:\1\2\3root adm:g' > $SNAP_COMMON/etc/cups-files.conf
+cat $CUPSDCONF | grep -v 'Listen' | perl -p -e 's:^(\s*<Location\s*/>\s*)$:$1  Allow \@LOCAL\n:' > $SNAP_COMMON/etc/cupsd.conf
 
 if $SNAP/port-occupied $PORT; then
     # CUPS already running (Debian packages), try alternative port
@@ -46,36 +44,35 @@ if $SNAP/port-occupied $PORT; then
     fi
 fi
 
-cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_DATA/etc/cupsd.conf.new && \
-    echo Port $PORT > $SNAP_DATA/etc/cupsd.conf && \
-    cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
-    rm $SNAP_DATA/etc/cupsd.conf.new
+cat $SNAP_COMMON/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_COMMON/etc/cupsd.conf.new && \
+    echo Port $PORT > $SNAP_COMMON/etc/cupsd.conf && \
+    cat $SNAP_COMMON/etc/cupsd.conf.new >> $SNAP_COMMON/etc/cupsd.conf && \
+    rm $SNAP_COMMON/etc/cupsd.conf.new
 
-cat $SNAP_DATA/etc/cupsd.conf | grep -v Listen > $SNAP_DATA/etc/cupsd.conf.new && \
-    echo Listen $DOMAINSOCKET > $SNAP_DATA/etc/cupsd.conf && \
-    cat $SNAP_DATA/etc/cupsd.conf.new >> $SNAP_DATA/etc/cupsd.conf && \
-    rm $SNAP_DATA/etc/cupsd.conf.new
+cat $SNAP_COMMON/etc/cupsd.conf | grep -v Listen > $SNAP_COMMON/etc/cupsd.conf.new && \
+    echo Listen $DOMAINSOCKET > $SNAP_COMMON/etc/cupsd.conf && \
+    cat $SNAP_COMMON/etc/cupsd.conf.new >> $SNAP_COMMON/etc/cupsd.conf && \
+    rm $SNAP_COMMON/etc/cupsd.conf.new
 
-cat $FONTSCONF | perl -p -e 's:(<dir>)(/):$1'"$SNAP"'$2:' | perl -p -e 's:(<cachedir>)(/):$1'"$SNAP_DATA"'$2:' > $SNAP_DATA/etc/fonts/fonts.conf
+cat $FONTSCONF | perl -p -e 's:(<dir>)(/):$1'"$SNAP"'$2:' | perl -p -e 's:(<cachedir>)(/):$1'"$SNAP_DATA"'$2:' > $SNAP_COMMON/etc/fonts/fonts.conf
 
-export FONTCONFIG_FILE=$SNAP_DATA/etc/fonts/fonts.conf
+export FONTCONFIG_FILE=$SNAP_COMMON/etc/fonts/fonts.conf
 
-echo PassEnv FONTCONFIG_FILE >> $SNAP_DATA/etc/cups-files.conf
+echo PassEnv FONTCONFIG_FILE >> $SNAP_COMMON/etc/cups-files.conf
 
-echo MaxLogSize 9999999 >> $SNAP_DATA/etc/cupsd.conf
+echo MaxLogSize 9999999 >> $SNAP_COMMON/etc/cupsd.conf
 
-perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_DATA/etc/cupsd.conf
+perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_COMMON/etc/cupsd.conf
 
-# chmod 0640 $SNAP_DATA/etc/cups-files.conf $SNAP_DATA/etc/cupsd.conf
+# chmod 0640 $SNAP_COMMON/etc/cups-files.conf $SNAP_COMMON/etc/cupsd.conf
 
 #chmod 711 $SNAP_DATA/var/run/certs/
 #chown root.root $SNAP_DATA/var/run/certs/
 
 # Spawn cupsd in a way that we can grab its PID
-mkdir -p "${SNAP_COMMON}/pid"
-exec $SCHEDULER -f -s $SNAP_DATA/etc/cups-files.conf -c $SNAP_DATA/etc/cupsd.conf &
+exec $SCHEDULER -f -s $SNAP_COMMON/etc/cups-files.conf -c $SNAP_COMMON/etc/cupsd.conf &
 PID=$!
-echo ${PID} > "${SNAP_COMMON}/pid/cupsd.pid"
+echo $PID > $SNAP_DATA/var/run/cupsd.pid
 
 # Keep this script running until cupsd terminates
-wait ${PID}
+wait $PID
