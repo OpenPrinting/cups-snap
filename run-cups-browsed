@@ -38,14 +38,24 @@ mkdir -p $TMPDIR
 #export CUPS_SERVERROOT=$SNAP_COMMON/etc
 #export CUPS_STATEDIR=$SNAP_DATA/var/run
 
-cat << EOF > $CONF
-CacheDir $SNAP_DATA/var/cache
-LogDir $SNAP_DATA/var/log
-DebugLogging file
-BrowseRemoteProtocols dnssd cups
-DomainSocket $DOMAINSOCKET
-CreateIPPPrinterQueues Yes
-EOF
+# Create cups-browsed.conf if not already present
+if  [ ! -f $CONF ]; then
+    # Get upstream default config file
+    cp $SNAP/etc/cups/cups-browsed.conf $CONF
+    # Edit the configuration file
+    perl -p -i \
+	 -e 's:^#\s*DebugLogging\s+file\s*$:DebugLogging file\n:;' \
+	 -e 's:^(#\s*)?BrowseRemoteProtocols\s+\.*\s*$:BrowseRemoteProtocols dnssd cups\n:;' \
+	 -e 's:^#\s*CreateIPPPrinterQueues\s+All\s*$:CreateIPPPrinterQueues All\n:;' \
+	 $CONF
+fi
+
+# Set paths for the snap
+perl -p -i \
+     -e 's:^(\s*#)?\s*CacheDir\s+\S+\s*$:CacheDir '"$SNAP_DATA"'/var/cache\n:;' \
+     -e 's:^(\s*#)?\s*LogDir\s+\S+\s*$:LogDir '"$SNAP_DATA"'/var/log\n:;' \
+     -e 's:^(\s*#)?\s*DomainSocket\s+/\S+\s*$:DomainSocket '"$DOMAINSOCKET"'\n:;' \
+     $CONF
 
 # Spawn cups-browsed in a way that we can grab its PID
 exec $DAEMON -c $CONF &
