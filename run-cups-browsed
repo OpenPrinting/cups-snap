@@ -52,9 +52,9 @@ fi
 
 # Set paths for the snap
 perl -p -i \
-     -e 's:^(\s*#)?\s*CacheDir\s+\S+\s*$:CacheDir '"$SNAP_DATA"'/var/cache\n:;' \
-     -e 's:^(\s*#)?\s*LogDir\s+\S+\s*$:LogDir '"$SNAP_DATA"'/var/log\n:;' \
-     -e 's:^(\s*#)?\s*DomainSocket\s+/\S+\s*$:DomainSocket '"$DOMAINSOCKET"'\n:;' \
+     -e 's:^(\s*\#)?\s*CacheDir\s+\S+\s*$:CacheDir '"$SNAP_DATA"'/var/cache\n:;' \
+     -e 's:^(\s*\#)?\s*LogDir\s+\S+\s*$:LogDir '"$SNAP_DATA"'/var/log\n:;' \
+     -e 's:^(\s*\#)?\s*DomainSocket\s+/\S+\s*$:DomainSocket '"$DOMAINSOCKET"'\n:;' \
      $CONF
 
 # Spawn cups-browsed in a way that we can grab its PID
