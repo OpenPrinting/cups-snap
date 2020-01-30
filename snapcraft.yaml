@@ -248,8 +248,13 @@ parts:
   copy:
     plugin: dump
     source: .
+    override-build: |
+        set -eux
+        gcc -o port-occupied port-occupied.c
+        snapcraftctl build
     stage-packages:
         - perl-base
         - sed
         - grep
+        - gcc
     after: [cups, cups-filters, selected-fonts]
