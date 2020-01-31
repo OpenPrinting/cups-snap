@@ -103,16 +103,14 @@ yes n | cp -ri $SNAP/etc/cups/ssl $SNAP_COMMON/etc/
 
 # Make sure that port and domain socket of this snap are always used
 PORT=631
+ALTPORT=10631
 DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
 
 # If the standard port 631 is occupied (by a system CUPS installed via
 # DEB/RPM/source for example) use alternative port
-if $SNAP/port-occupied $PORT; then
+if $SNAP/scripts/port-occupied $PORT; then
     # CUPS already running (Debian packages), try alternative port
-    if [ -e $SNAP/default.yaml ]; then
-	PORT=$(grep -A1 cups $SNAP/default.yaml|\
-		   grep altport:|sed "s:.*altport\: ::")
-    fi
+    PORT=$ALTPORT
 fi
 
 # Set the port in cupsd.conf

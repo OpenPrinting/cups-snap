@@ -23,16 +23,16 @@ plugs:
 
 apps:
   cupsd:
-    command: run-cupsd
-    stop-command: stop-cupsd
-    reload-command: reload-cupsd
+    command: scripts/run-cupsd
+    stop-command: scripts/stop-cupsd
+    reload-command: scripts/reload-cupsd
     restart-condition: always
     daemon: simple
     plugs: [network, network-bind, avahi-control, raw-usb, system-config]
   cups-browsed:
-    command: run-cups-browsed
-    stop-command: stop-cups-browsed
-    reload-command: reload-cups-browsed
+    command: scripts/run-cups-browsed
+    stop-command: scripts/stop-cups-browsed
+    reload-command: scripts/reload-cups-browsed
     restart-condition: always
     daemon: simple
     plugs: [network, network-bind, avahi-control, system-config]
@@ -245,16 +245,42 @@ parts:
         snapcraftctl stage
         mkdir -p $SNAPCRAFT_STAGE/share/cups/fonts/
         cp $SNAPCRAFT_STAGE/usr/share/fonts/truetype/freefont/*.ttf $SNAPCRAFT_STAGE/share/cups/fonts/
-  copy:
-    plugin: dump
+  utils:
+    plugin: nil
     source: .
-    override-build: |
-        set -eux
-        gcc -o port-occupied port-occupied.c
-        snapcraftctl build
     stage-packages:
         - perl-base
         - sed
         - grep
+        - libbinutils
+        - libmpfr6
+        - libisl19
+        - libmpc3
+    organize:
+      usr/bin/: bin/
+      usr/lib/: lib/
+      usr/share/: share/
+    prime:
+        - bin/
+        - lib/
+        - share/
+  scripts:
+    plugin: dump
+    source: scripts/
+    override-build: |
+        set -eux
+        gcc -o port-occupied port-occupied.c
+        snapcraftctl build
+    organize:
+      run-cupsd: scripts/run-cupsd
+      stop-cupsd: scripts/stop-cupsd
+      reload-cupsd: scripts/reload-cupsd
+      run-cups-browsed: scripts/run-cups-browsed
+      stop-cups-browsed: scripts/stop-cups-browsed
+      reload-cups-browsed: scripts/reload-cups-browsed
+      port-occupied: scripts/port-occupied
+    prime:
+      - scripts/
+    build-packages:
         - gcc
-    after: [cups, cups-filters, selected-fonts]
+    after: [cups, cups-filters, selected-fonts, utils]
