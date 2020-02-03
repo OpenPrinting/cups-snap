@@ -181,12 +181,20 @@ parts:
         - --disable-gtk
         - --with-drivers=page,pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
         - --enable-cups
+        - --enable-freetype
+        - --datarootdir=/snap/printing-stack-snap/current/share/
+        - --with-fontpath=/snap/printing-stack-snap/current/share/cups/fonts
+        - --with-cups-serverbin=/snap/printing-stack-snap/current/lib/cups
+        - --with-cups-serverroot=/var/snap/printing-stack-snap/common/etc
+        - --with-cups-datadir=/snap/printing-stack-snap/current/share/cups
     # The "page" added to the drivers list is a workaround for a missing
     # dependency in the Makefiles. See
     # https://bugs.ghostscript.com/show_bug.cgi?id=702019
     # This is fixed and the fix will be in Ghostscript 9.51 and later
     stage-packages:
         - libpaper1
+    organize:
+      snap/printing-stack-snap/current/share: share
     after: [cups]
   cups-filters:
     source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.0.tar.xz
@@ -216,7 +224,6 @@ parts:
         - libavahi-glib-dev
         - librsvg2-bin
         - liblouis-dev
-        - fonts-dejavu-core
     stage-packages:
         - poppler-utils
         - libpoppler-cpp0v5
@@ -239,12 +246,10 @@ parts:
     source: .
     stage-packages:
         - fonts-freefont-ttf
+    organize:
+      usr/share/fonts/truetype/freefont/: share/cups/fonts/
     prime:
         - share/cups/fonts/*
-    override-stage: |
-        snapcraftctl stage
-        mkdir -p $SNAPCRAFT_STAGE/share/cups/fonts/
-        cp $SNAPCRAFT_STAGE/usr/share/fonts/truetype/freefont/*.ttf $SNAPCRAFT_STAGE/share/cups/fonts/
   utils:
     plugin: nil
     source: .
