@@ -113,6 +113,7 @@ parts:
         patch -p0 < $SNAPCRAFT_STAGE/patches/libcups-do-not-read-cupsd-conf-from-local-file.patch
         patch -p0 < $SNAPCRAFT_STAGE/patches/cups-deviced-allow-run-by-root.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-extra-check-for-admin-tasks-snap-cups-control.patch
         sed -i 's|fchown(cupsFileNumber(fp), getuid(), Group)|0|g' scheduler/file.c
         sed -i 's|(fchmod(cupsFileNumber(fp), mode))|(0)|g' scheduler/file.c
         sed -i 's|chown(filename, user, group)|0|g' scheduler/conf.c
@@ -162,10 +163,17 @@ parts:
         - sharutils
         - zlib1g-dev
         - wget
+        - libapparmor-dev
+        - libsnapd-glib-dev
     stage-packages:
         - libusb-1.0-0
         - libavahi-common3
         - libavahi-client3
+        - libicu60
+        - libjson-glib-1.0-0
+        - libsnapd-glib1
+        - libsoup2.4-1
+        - libxml2
     after: [cups-patches]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.0.1/qpdf-10.0.1.tar.gz

@@ -1,0 +1,646 @@
+diff --git a/Makedefs.in b/Makedefs.in
+index 9ee75856d..477ef37fc 100644
+--- a/Makedefs.in
++++ b/Makedefs.in
+@@ -171,6 +171,8 @@ DSOFLAGS	=	@DSOFLAGS@
+ DNSSDLIBS	=	@DNSSDLIBS@
+ IPPFIND_BIN	=	@IPPFIND_BIN@
+ IPPFIND_MAN	=	@IPPFIND_MAN@
++APPARMORLIBS	=	@APPARMORLIBS@
++SNAPDGLIBLIBS	=	@SNAPDGLIBLIBS@
+ LDFLAGS		=	@LDFLAGS@
+ LINKCUPS	=	@LINKCUPS@
+ LINKCUPSSTATIC	=	../cups/$(LIBCUPSSTATIC) $(LIBS)
+diff --git a/config-scripts/cups-snap.m4 b/config-scripts/cups-snap.m4
+new file mode 100644
+index 000000000..16c4c7b0c
+--- /dev/null
++++ b/config-scripts/cups-snap.m4
+@@ -0,0 +1,50 @@
++dnl
++dnl Support for packaging CUPS in a Snap.
++dnl
++dnl Copyright © 2020 by Till Kamppeter
++dnl Copyright © 2007-2019 by Apple Inc.
++dnl
++dnl Licensed under Apache License v2.0.  See the file "LICENSE" for more
++dnl information.
++dnl
++
++# Snap packaging support
++
++AC_ARG_ENABLE(snap, [  --enable-snap           enable support for packaging CUPS in a Snap])
++
++APPARMORLIBS=""
++SNAPDGLIBLIBS=""
++ENABLE_SNAP="NO"
++
++if test "x$PKGCONFIG" != x -a x$enable_snap != xno; then
++	AC_MSG_CHECKING(for libapparmor)
++	if $PKGCONFIG --exists libapparmor; then
++		AC_MSG_RESULT(yes)
++		CFLAGS="$CFLAGS `$PKGCONFIG --cflags libapparmor`"
++		APPARMORLIBS="`$PKGCONFIG --libs libapparmor`"
++		AC_DEFINE(HAVE_APPARMOR)
++		AC_MSG_CHECKING(for snapd-glib)
++		if $PKGCONFIG --exists snapd-glib glib-2.0 gio-2.0; then
++			AC_MSG_RESULT(yes)
++			CFLAGS="$CFLAGS `$PKGCONFIG --cflags snapd-glib glib-2.0 gio-2.0`"
++			SNAPDGLIBLIBS="`$PKGCONFIG --libs snapd-glib glib-2.0 gio-2.0`"
++			AC_DEFINE(HAVE_SNAPDGLIB)
++			AC_DEFINE(BUILD_SNAP)
++			ENABLE_SNAP="YES"
++		else
++			AC_MSG_RESULT(no)
++		fi
++	else
++		AC_MSG_RESULT(no)
++	fi
++fi
++
++AC_MSG_CHECKING(for Snap support)
++if test "x$ENABLE_SNAP" != "xNO"; then
++	AC_MSG_RESULT(yes)
++else
++	AC_MSG_RESULT(no)
++fi
++
++AC_SUBST(APPARMORLIBS)
++AC_SUBST(SNAPDGLIBLIBS)
+diff --git a/config.h.in b/config.h.in
+index 1c2d7a826..7b3da9e99 100644
+--- a/config.h.in
++++ b/config.h.in
+@@ -645,6 +645,13 @@
+ #undef HAVE_SYS_STATVFS_H
+ #undef HAVE_SYS_VFS_H
+ 
++/*
++ * Do we have the libraries needed for Snap packaging support?
++ */
++
++#undef HAVE_APPARMOR
++#undef HAVE_SNAPDGLIB
++#undef BUILD_SNAP
+ 
+ /*
+  * Location of macOS localization bundle, if any.
+diff --git a/configure b/configure
+index e06b17f59..98b21f805 100755
+--- a/configure
++++ b/configure
+@@ -664,6 +664,8 @@ SYSTEMD_DIR
+ LAUNCHD_DIR
+ ONDEMANDLIBS
+ ONDEMANDFLAGS
++SNAPDGLIBLIBS
++APPARMORLIBS
+ IPPFIND_MAN
+ IPPFIND_BIN
+ DNSSD_BACKEND
+@@ -809,6 +811,7 @@ infodir
+ docdir
+ oldincludedir
+ includedir
++runstatedir
+ localstatedir
+ sharedstatedir
+ sysconfdir
+@@ -878,6 +881,7 @@ enable_avahi
+ enable_dnssd
+ with_dnssd_libs
+ with_dnssd_includes
++enable_snap
+ enable_launchd
+ enable_systemd
+ with_systemd
+@@ -965,6 +969,7 @@ datadir='${datarootdir}'
+ sysconfdir='${prefix}/etc'
+ sharedstatedir='${prefix}/com'
+ localstatedir='${prefix}/var'
++runstatedir='${localstatedir}/run'
+ includedir='${prefix}/include'
+ oldincludedir='/usr/include'
+ docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
+@@ -1217,6 +1222,15 @@ do
+   | -silent | --silent | --silen | --sile | --sil)
+     silent=yes ;;
+ 
++  -runstatedir | --runstatedir | --runstatedi | --runstated \
++  | --runstate | --runstat | --runsta | --runst | --runs \
++  | --run | --ru | --r)
++    ac_prev=runstatedir ;;
++  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
++  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
++  | --run=* | --ru=* | --r=*)
++    runstatedir=$ac_optarg ;;
++
+   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
+     ac_prev=sbindir ;;
+   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
+@@ -1354,7 +1368,7 @@ fi
+ for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
+ 		datadir sysconfdir sharedstatedir localstatedir includedir \
+ 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
+-		libdir localedir mandir
++		libdir localedir mandir runstatedir
+ do
+   eval ac_val=\$$ac_var
+   # Remove trailing slashes.
+@@ -1507,6 +1521,7 @@ Fine tuning of the installation directories:
+   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
+   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
+   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
++  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
+   --libdir=DIR            object code libraries [EPREFIX/lib]
+   --includedir=DIR        C header files [PREFIX/include]
+   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
+@@ -1565,6 +1580,7 @@ Optional Features:
+   --disable-largefile     omit support for large files
+   --disable-avahi         disable DNS Service Discovery support using Avahi
+   --disable-dnssd         disable DNS Service Discovery support using mDNSResponder
++  --enable-snap           enable support for packaging CUPS in a Snap
+   --disable-launchd       disable launchd support
+   --disable-systemd       disable systemd support
+   --enable-upstart        enable upstart support
+@@ -8649,7 +8665,7 @@ else
+     We can't simply define LARGE_OFF_T to be 9223372036854775807,
+     since some C++ compilers masquerading as C compilers
+     incorrectly reject 9223372036854775807.  */
+-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
++#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
+ 		       && LARGE_OFF_T % 2147483647 == 1)
+ 		      ? 1 : -1];
+@@ -8695,7 +8711,7 @@ else
+     We can't simply define LARGE_OFF_T to be 9223372036854775807,
+     since some C++ compilers masquerading as C compilers
+     incorrectly reject 9223372036854775807.  */
+-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
++#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
+ 		       && LARGE_OFF_T % 2147483647 == 1)
+ 		      ? 1 : -1];
+@@ -8719,7 +8735,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+     We can't simply define LARGE_OFF_T to be 9223372036854775807,
+     since some C++ compilers masquerading as C compilers
+     incorrectly reject 9223372036854775807.  */
+-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
++#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
+ 		       && LARGE_OFF_T % 2147483647 == 1)
+ 		      ? 1 : -1];
+@@ -8764,7 +8780,7 @@ else
+     We can't simply define LARGE_OFF_T to be 9223372036854775807,
+     since some C++ compilers masquerading as C compilers
+     incorrectly reject 9223372036854775807.  */
+-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
++#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
+ 		       && LARGE_OFF_T % 2147483647 == 1)
+ 		      ? 1 : -1];
+@@ -8788,7 +8804,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+     We can't simply define LARGE_OFF_T to be 9223372036854775807,
+     since some C++ compilers masquerading as C compilers
+     incorrectly reject 9223372036854775807.  */
+-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
++#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
+   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
+ 		       && LARGE_OFF_T % 2147483647 == 1)
+ 		      ? 1 : -1];
+@@ -8994,6 +9010,64 @@ fi
+ 
+ 
+ 
++# Snap packaging support
++
++# Check whether --enable-snap was given.
++if test "${enable_snap+set}" = set; then :
++  enableval=$enable_snap;
++fi
++
++
++APPARMORLIBS=""
++SNAPDGLIBLIBS=""
++ENABLE_SNAP="NO"
++
++if test "x$PKGCONFIG" != x -a x$enable_snap != xno; then
++	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libapparmor" >&5
++$as_echo_n "checking for libapparmor... " >&6; }
++	if $PKGCONFIG --exists libapparmor; then
++		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
++$as_echo "yes" >&6; }
++		CFLAGS="$CFLAGS `$PKGCONFIG --cflags libapparmor`"
++		APPARMORLIBS="`$PKGCONFIG --libs libapparmor`"
++		$as_echo "#define HAVE_APPARMOR 1" >>confdefs.h
++
++		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for snapd-glib" >&5
++$as_echo_n "checking for snapd-glib... " >&6; }
++		if $PKGCONFIG --exists snapd-glib glib-2.0 gio-2.0; then
++			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
++$as_echo "yes" >&6; }
++			CFLAGS="$CFLAGS `$PKGCONFIG --cflags snapd-glib glib-2.0 gio-2.0`"
++			SNAPDGLIBLIBS="`$PKGCONFIG --libs snapd-glib glib-2.0 gio-2.0`"
++			$as_echo "#define HAVE_SNAPDGLIB 1" >>confdefs.h
++
++			$as_echo "#define BUILD_SNAP 1" >>confdefs.h
++
++			ENABLE_SNAP="YES"
++		else
++			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
++$as_echo "no" >&6; }
++		fi
++	else
++		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
++$as_echo "no" >&6; }
++	fi
++fi
++
++{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Snap support" >&5
++$as_echo_n "checking for Snap support... " >&6; }
++if test "x$ENABLE_SNAP" != "xNO"; then
++	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
++$as_echo "yes" >&6; }
++else
++	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
++$as_echo "no" >&6; }
++fi
++
++
++
++
++
+ ONDEMANDFLAGS=""
+ ONDEMANDLIBS=""
+ 
+diff --git a/configure.ac b/configure.ac
+index eff353b7e..5a353ee92 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -31,6 +31,7 @@ sinclude(config-scripts/cups-ssl.m4)
+ sinclude(config-scripts/cups-pam.m4)
+ sinclude(config-scripts/cups-largefile.m4)
+ sinclude(config-scripts/cups-dnssd.m4)
++sinclude(config-scripts/cups-snap.m4)
+ sinclude(config-scripts/cups-startup.m4)
+ sinclude(config-scripts/cups-defaults.m4)
+ 
+diff --git a/scheduler/Makefile b/scheduler/Makefile
+index b50bd0a99..6655fe71a 100644
+--- a/scheduler/Makefile
++++ b/scheduler/Makefile
+@@ -316,13 +316,15 @@ cupsd:	$(CUPSDOBJS) libcupsmime.a ../cups/$(LIBCUPS)
+ 	echo Linking $@...
+ 	$(LD_CC) $(ALL_LDFLAGS) -o cupsd $(CUPSDOBJS) libcupsmime.a \
+ 		$(PAMLIBS) $(LIBPAPER) $(LIBMALLOC) $(DNSSDLIBS) $(SERVERLIBS) \
+-		$(ONDEMANDLIBS) $(LIBWRAP) $(LIBGSSAPI) $(COMMONLIBS) $(LINKCUPS)
++		$(ONDEMANDLIBS) $(LIBWRAP) $(LIBGSSAPI) $(COMMONLIBS) $(LINKCUPS) \
++		$(APPARMORLIBS) $(SNAPDGLIBLIBS)
+ 	$(CODE_SIGN) -s "$(CODE_SIGN_IDENTITY)" $@
+ 
+ cupsd-static:	$(CUPSDOBJS) libcupsmime.a ../cups/$(LIBCUPSSTATIC)
+ 	echo Linking $@...
+ 	$(LD_CC) $(ALL_LDFLAGS) -o cupsd-static $(CUPSDOBJS) libcupsmime.a \
+-		$(PAMLIBS) $(LIBPAPER) $(LIBMALLOC) $(SERVERLIBS) $(ONDEMANDLIBS) \ $(LIBWRAP) $(LINKCUPSSTATIC)
++		$(PAMLIBS) $(LIBPAPER) $(LIBMALLOC) $(SERVERLIBS) $(ONDEMANDLIBS) \
++		$(LIBWRAP) $(APPARMORLIBS) $(SNAPDGLIBLIBS) $(LINKCUPSSTATIC)
+ 	$(CODE_SIGN) -s "$(CODE_SIGN_IDENTITY)" $@
+ 
+ 
+diff --git a/scheduler/auth.c b/scheduler/auth.c
+index 4fbad6e24..1af90579e 100644
+--- a/scheduler/auth.c
++++ b/scheduler/auth.c
+@@ -43,6 +43,7 @@
+ #  include <sys/ucred.h>
+ typedef struct xucred cupsd_ucred_t;
+ #  define CUPSD_UCRED_UID(c) (c).cr_uid
++#  define CUPSD_UCRED_PID(c) (c).cr_pid
+ #else
+ #  ifndef __OpenBSD__
+ typedef struct ucred cupsd_ucred_t;
+@@ -50,7 +51,13 @@ typedef struct ucred cupsd_ucred_t;
+ typedef struct sockpeercred cupsd_ucred_t;
+ #  endif
+ #  define CUPSD_UCRED_UID(c) (c).uid
++#  define CUPSD_UCRED_PID(c) (c).pid
+ #endif /* HAVE_SYS_UCRED_H */
++#ifdef BUILD_SNAP
++#  include <sys/apparmor.h>
++#  include <glib.h>
++#  include <snapd-glib/snapd-glib.h>
++#endif /* BUILD_SNAP */
+ 
+ 
+ /*
+@@ -1520,6 +1527,189 @@ cupsdFreeLocation(cupsd_location_t *loc)/* I - Location to free */
+ }
+ 
+ 
++/*
++ * 'cupsdCheckAdminTask()' - Do additional checks on administrative tasks
++ */
++
++int                                      /* O - 1 if admin task authorized */
++cupsdCheckAdminTask(cupsd_client_t *con) /* I - Connection */
++{
++  int ret = 1; /* Return value */
++
++  cupsdLogMessage(CUPSD_LOG_DEBUG,
++		  "cupsdCheckAdminTask: Administrative task");
++
++#if defined(SO_PEERCRED) && defined(AF_LOCAL)
++ /*
++  * Get the client's PID if it accesses locally via domain socket
++  */
++
++  if (httpAddrFamily(con->http->hostaddr) == AF_LOCAL)
++  {
++    cupsd_ucred_t	peercred;	/* Peer credentials */
++    socklen_t		peersize;	/* Size of peer credentials */
++    int                 client_pid;     /* PID of client */
++
++    peersize = sizeof(peercred);
++
++#  ifdef __APPLE__
++    if (getsockopt(httpGetFd(con->http), 0, LOCAL_PEERCRED, &peercred,
++		   &peersize))
++#  else
++    if (getsockopt(httpGetFd(con->http), SOL_SOCKET, SO_PEERCRED, &peercred,
++		   &peersize))
++#  endif /* __APPLE__ */
++    {
++      cupsdLogMessage(CUPSD_LOG_ERROR,
++		      "cupsdCheckAdminTask: Unable to get peer credentials of client connecting via domain socket - Error: %s",
++		      strerror(errno));
++    }
++    else
++    {
++      cupsdLogMessage(CUPSD_LOG_DEBUG2,
++		      "cupsdCheckAdminTask: Client UID %d PID %d",
++		      CUPSD_UCRED_UID(peercred),
++		      CUPSD_UCRED_PID(peercred));
++      client_pid = CUPSD_UCRED_PID(peercred);
++
++      /* Examine client process here */
++      cupsdLogMessage(CUPSD_LOG_DEBUG,
++		      "cupsdCheckAdminTask: Clent connecting via domain socket, examining client process %d ...",
++		      client_pid);
++#  ifdef BUILD_SNAP
++      cupsdLogMessage(CUPSD_LOG_DEBUG,
++		      "cupsdCheckAdminTask: Checking whether client process is from a Snap ...");
++
++#define SNAP_LABEL_PREFIX           "snap."
++#define SNAP_LABEL_PREFIX_LENGTH    5
++
++      char *context = NULL;
++      char *snap_name = NULL;
++      char *dot;
++      SnapdClient *snapd = NULL;
++      SnapdSnap *snap = NULL;
++      GPtrArray *plugs = NULL;
++      GError *error = NULL;
++
++      /* If AppArmor is not enabled, then we can't identify the client */
++      if (!aa_is_enabled())
++      {
++	cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: No AppArmor in use");
++	goto snap_check_done;
++      }
++
++      if (aa_gettaskcon(client_pid, &context, NULL) < 0)
++      {
++	cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: AppArmor profile could not be retrieved for client process - Error: %s",
++			strerror(errno));
++	goto snap_check_done;
++      } else
++	cupsdLogMessage(CUPSD_LOG_DEBUG2,
++			"cupsdCheckAdminTask: AppArmor profile of client process: %s",
++			context);
++
++      /* If the AppArmor context does not begin with "snap.", then this
++       * is not a snap */
++      if (strncmp(context, SNAP_LABEL_PREFIX, SNAP_LABEL_PREFIX_LENGTH) != 0)
++      {
++	cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: AppArmor context not from a Snap");
++        goto snap_check_done;
++      }
++
++      dot = strchr(context + SNAP_LABEL_PREFIX_LENGTH, '.');
++      if (dot == NULL)
++      {
++        cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: Malformed snapd AppArmor profile name: %s",
++			context);
++        goto snap_check_done;
++      }
++      snap_name = strndup(context + SNAP_LABEL_PREFIX_LENGTH,
++			  (size_t)(dot - context - SNAP_LABEL_PREFIX_LENGTH));
++      cupsdLogMessage(CUPSD_LOG_DEBUG,
++		      "cupsdCheckAdminTask: Client is the Snap %s",
++		      snap_name);
++
++      /* Connect to snapd */
++      snapd = snapd_client_new();
++      if (!snapd)
++      {
++	cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: Could not connect to snapd, permission denied");
++	ret = 0;
++	goto snap_check_done;
++      }
++
++      /* Check whether the client Snap is under classic confinement */
++      snap = snapd_client_get_snap_sync(snapd, snap_name, NULL, &error);
++      if (!snap)
++      {
++        cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: Could not obtain Snap data: \"%s\", permission denied",
++			error->message);
++	ret = 0;
++	goto snap_check_done;
++      }
++
++      /* Snaps using classic confinement are granted access */
++      if (snapd_snap_get_confinement(snap) == SNAPD_CONFINEMENT_CLASSIC)
++      {
++        cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: Client Snap under classic confinement, access granted");
++        goto snap_check_done;
++      }
++
++      /* Get list of interfaces to which the client Snap is plugging */
++      if (!snapd_client_get_connections2_sync(snapd,
++					      SNAPD_GET_CONNECTIONS_FLAGS_NONE,
++					      snap_name, "cups-control", NULL,
++					      NULL, &plugs, NULL, NULL, &error))
++      {
++        cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: Could not obtain the Snap's interface connections: \"%s\", permission denied",
++			error->message);
++	ret = 0;
++	goto snap_check_done;
++      }
++
++      if (plugs->len <= 0)
++      {
++	cupsdLogMessage(CUPSD_LOG_DEBUG,
++			"cupsdCheckAdminTask: Snap does not connect via \"cups-control\" interface, permission denied");
++	ret = 0;
++	goto snap_check_done;
++      }
++
++      cupsdLogMessage(CUPSD_LOG_DEBUG,
++		      "cupsdCheckAdminTask: Snap connecting via \"cups-control\" interface, access granted");
++
++    snap_check_done:
++      if (context)
++	free(context);
++      if (snap_name)
++	free(snap_name);
++      if (snapd)
++	g_clear_object(&snapd);
++      if (snap)
++	g_clear_object(&snap);
++      if (plugs)
++	g_clear_object(&plugs);
++#  endif /* BUILD_SNAP */
++    }
++  }
++#endif /* SO_PEERCRED && AF_LOCAL */
++
++  cupsdLogMessage(CUPSD_LOG_DEBUG,
++		  "cupsdCheckAdminTask: Access %s",
++		  ret == 1 ? "granted" : "denied");
++
++  return ret;
++}
++
++
+ /*
+  * 'cupsdIsAuthorized()' - Check to see if the user is authorized...
+  */
+@@ -1714,12 +1904,9 @@ cupsdIsAuthorized(cupsd_client_t *con,	/* I - Connection */
+ 
+  /*
+   * OK, got a username.  See if we need normal user access, or group
+-  * access... (root always matches)
++  * access...
+   */
+ 
+-  if (!strcmp(username, "root"))
+-    return (HTTP_OK);
+-
+  /*
+   * Strip any @domain or @KDC from the username and owner...
+   */
+@@ -1749,6 +1936,21 @@ cupsdIsAuthorized(cupsd_client_t *con,	/* I - Connection */
+   else
+     pw = NULL;
+ 
++ /*
++  * For matching user and group memberships below we will first go
++  * through all names except @SYSTEM to authorize the task as
++  * non-administrative, like printing or deleting one's own job, if this
++  * fails we will check whether we can authorize via the special name
++  * @SYSTEM, as an administrative task, like creating a print queue or
++  * deleting someone else's job.
++  * Note that tasks are considered as administrative by the policies
++  * in cupsd.conf, when they require the user or group @SYSTEM.
++  * We do this separation because if the client is a Snap connecting via
++  * domain socket, we need to additionally check whether it plugs to us
++  * through the "cups-control" interface which allows administration and
++  * not through the "cups" interface which allows only printing.
++  */
++
+   if (best->level == CUPSD_AUTH_USER)
+   {
+    /*
+@@ -1779,8 +1981,15 @@ cupsdIsAuthorized(cupsd_client_t *con,	/* I - Connection */
+       {
+ 	if (!_cups_strncasecmp(name, "@AUTHKEY(", 9) && check_authref(con, name + 9))
+ 	  return (HTTP_OK);
+-	else if (!_cups_strcasecmp(name, "@SYSTEM") && SystemGroupAuthKey &&
+-		 check_authref(con, SystemGroupAuthKey))
++      }
++
++      for (name = (char *)cupsArrayFirst(best->names);
++           name;
++	   name = (char *)cupsArrayNext(best->names))
++      {
++	if (!_cups_strcasecmp(name, "@SYSTEM") && SystemGroupAuthKey &&
++	    check_authref(con, SystemGroupAuthKey) &&
++	    cupsdCheckAdminTask(con))
+ 	  return (HTTP_OK);
+       }
+ 
+@@ -1797,9 +2006,8 @@ cupsdIsAuthorized(cupsd_client_t *con,	/* I - Connection */
+ 	return (HTTP_OK);
+       else if (!_cups_strcasecmp(name, "@SYSTEM"))
+       {
+-        for (i = 0; i < NumSystemGroups; i ++)
+-	  if (cupsdCheckGroup(username, pw, SystemGroups[i]))
+-	    return (HTTP_OK);
++	/* Do @SYSTEM later, when every other entry fails */
++	continue;
+       }
+       else if (name[0] == '@')
+       {
+@@ -1810,6 +2018,19 @@ cupsdIsAuthorized(cupsd_client_t *con,	/* I - Connection */
+         return (HTTP_OK);
+     }
+ 
++    for (name = (char *)cupsArrayFirst(best->names);
++	 name;
++	 name = (char *)cupsArrayNext(best->names))
++    {
++      if (!_cups_strcasecmp(name, "@SYSTEM"))
++      {
++        for (i = 0; i < NumSystemGroups; i ++)
++	  if (cupsdCheckGroup(username, pw, SystemGroups[i]) &&
++	      cupsdCheckAdminTask(con))
++	    return (HTTP_OK);
++      }
++    }
++
+     return (con->username[0] ? HTTP_FORBIDDEN : HTTP_UNAUTHORIZED);
+   }
+ 
+@@ -1827,16 +2048,31 @@ cupsdIsAuthorized(cupsd_client_t *con,	/* I - Connection */
+        name;
+        name = (char *)cupsArrayNext(best->names))
+   {
++    if (!_cups_strcasecmp(name, "@SYSTEM"))
++    {
++      /* Do @SYSTEM later, when every other entry fails */
++      continue;
++    }
++
+     cupsdLogMessage(CUPSD_LOG_DEBUG2, "cupsdIsAuthorized: Checking group \"%s\" membership...", name);
+ 
++    if (cupsdCheckGroup(username, pw, name))
++      return (HTTP_OK);
++  }
++
++  for (name = (char *)cupsArrayFirst(best->names);
++       name;
++       name = (char *)cupsArrayNext(best->names))
++  {
+     if (!_cups_strcasecmp(name, "@SYSTEM"))
+     {
++      cupsdLogMessage(CUPSD_LOG_DEBUG2, "cupsdIsAuthorized: Checking group \"%s\" membership...", name);
++
+       for (i = 0; i < NumSystemGroups; i ++)
+-	if (cupsdCheckGroup(username, pw, SystemGroups[i]))
++	if (cupsdCheckGroup(username, pw, SystemGroups[i]) &&
++	    cupsdCheckAdminTask(con))
+ 	  return (HTTP_OK);
+     }
+-    else if (cupsdCheckGroup(username, pw, name))
+-      return (HTTP_OK);
+   }
+ 
+  /*
