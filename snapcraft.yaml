@@ -168,18 +168,20 @@ parts:
         - libavahi-client3
     after: [cups-patches]
   qpdf:
-    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-9.1.0/qpdf-9.1.0.tar.gz
+    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.0.1/qpdf-10.0.1.tar.gz
     plugin: autotools
     build-packages:
         - libjpeg-dev
         - zlib1g-dev
+    stage-packages:
+        - libjpeg-turbo8
   ghostscript:
-    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs950/ghostscript-9.50.tar.gz
+    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs952/ghostscript-9.52.tar.gz
     plugin: autotools
     configflags:
         - --without-x
         - --disable-gtk
-        - --with-drivers=page,pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
+        - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
         - --enable-cups
         - --enable-freetype
         - --datarootdir=/snap/printing-stack-snap/current/share/
@@ -187,17 +189,16 @@ parts:
         - --with-cups-serverbin=/snap/printing-stack-snap/current/lib/cups
         - --with-cups-serverroot=/var/snap/printing-stack-snap/common/etc
         - --with-cups-datadir=/snap/printing-stack-snap/current/share/cups
-    # The "page" added to the drivers list is a workaround for a missing
-    # dependency in the Makefiles. See
-    # https://bugs.ghostscript.com/show_bug.cgi?id=702019
-    # This is fixed and the fix will be in Ghostscript 9.51 and later
     stage-packages:
         - libpaper1
+        - libfontconfig1
+        - libfreetype6
+        - libpng16-16
     organize:
       snap/printing-stack-snap/current/share: share
     after: [cups]
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.0.tar.xz
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.4.tar.xz
     plugin: autotools
     configflags:
         - --disable-mutool
