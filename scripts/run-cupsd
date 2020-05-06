@@ -6,9 +6,10 @@ mkdir -p $SNAP_DATA/var/spool/tmp
 mkdir -p $SNAP_DATA/var/run/certs
 mkdir -p $SNAP_DATA/var/log
 mkdir -p $SNAP_DATA/var/cache/fontconfig
-mkdir -p $SNAP_COMMON/etc/ppd
-mkdir -p $SNAP_COMMON/etc/ssl
+mkdir -p $SNAP_COMMON/etc/cups/ppd
+mkdir -p $SNAP_COMMON/etc/cups/ssl
 mkdir -p $SNAP_COMMON/etc/fonts
+mkdir -p $SNAP_COMMON/run
 
 # Set UTF-8
 export LC_ALL=C.UTF-8
@@ -28,10 +29,10 @@ mkdir -p $TMPDIR
 export FONTCONFIG_FILE=$SNAP_COMMON/etc/fonts/fonts.conf
 
 # Create cups-files.conf if not already present
-if [ ! -f $SNAP_COMMON/etc/cups-files.conf ]; then
+if [ ! -f $SNAP_COMMON/etc/cups/cups-files.conf ]; then
     # Get default cups-files.conf
     CUPSFILESCONF=$SNAP/etc/cups/cups-files.conf
-    cp $CUPSFILESCONF $SNAP_COMMON/etc/cups-files.conf
+    cp $CUPSFILESCONF $SNAP_COMMON/etc/cups/cups-files.conf
 fi
 
 # Set paths for the snap
@@ -49,30 +50,30 @@ perl -p -i \
      -e 's:^(\s*\#)?\s*Printcap\s+.*$:Printcap '"$SNAP_COMMON"'/etc/printcap:;' \
      -e 's:^(\s*\#)?\s*RequestRoot\s+.*$:RequestRoot '"$SNAP_DATA"'/var/spool:;' \
      -e 's:^(\s*\#)?\s*ServerBin\s+.*$:ServerBin '"$SNAP"'/lib/cups:;' \
-     -e 's:^(\s*\#)?\s*ServerRoot\s+.*$:ServerRoot '"$SNAP_COMMON"'/etc:;' \
+     -e 's:^(\s*\#)?\s*ServerRoot\s+.*$:ServerRoot '"$SNAP_COMMON"'/etc/cups:;' \
      -e 's:^(\s*\#)?\s*StateDir\s+.*$:StateDir '"$SNAP_DATA"'/var/run:;' \
      -e 's:^(\s*\#)?\s*TempDir\s+.*$:TempDir '"$SNAP_DATA"'/var/spool/tmp:;' \
-     $SNAP_COMMON/etc/cups-files.conf
-grep -q 'PassEnv FONTCONFIG_FILE' $SNAP_COMMON/etc/cups-files.conf ||
-    echo PassEnv FONTCONFIG_FILE >> $SNAP_COMMON/etc/cups-files.conf
-# chmod 0640 $SNAP_COMMON/etc/cups-files.conf
+     $SNAP_COMMON/etc/cups/cups-files.conf
+grep -q 'PassEnv FONTCONFIG_FILE' $SNAP_COMMON/etc/cups/cups-files.conf ||
+    echo PassEnv FONTCONFIG_FILE >> $SNAP_COMMON/etc/cups/cups-files.conf
+# chmod 0640 $SNAP_COMMON/etc/cups/cups-files.conf
 
 # Create cupsd.conf if not already present
-if [ ! -f $SNAP_COMMON/etc/cupsd.conf ]; then
+if [ ! -f $SNAP_COMMON/etc/cups/cupsd.conf ]; then
     # Get default cupsd.conf
     CUPSDCONF=$SNAP/etc/cups/cupsd.conf
     cat $CUPSDCONF | \
 	grep -v 'Listen' | \
 	perl -p -e 's:^(\s*<Location\s*/>\s*)$:$1  Allow \@LOCAL\n:' \
-	     > $SNAP_COMMON/etc/cupsd.conf
+	     > $SNAP_COMMON/etc/cups/cupsd.conf
 
     # No restrictions on size of log file
-    echo MaxLogSize 9999999 >> $SNAP_COMMON/etc/cupsd.conf
+    echo MaxLogSize 9999999 >> $SNAP_COMMON/etc/cups/cupsd.conf
 
     # Debug logging
-    perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_COMMON/etc/cupsd.conf
+    perl -p -i -e 's:^(\s*)\#?(\s*LogLevel\s+)\S+:\1\2debug:g' $SNAP_COMMON/etc/cups/cupsd.conf
 
-    # chmod 0640 $SNAP_COMMON/etc/cupsd.conf
+    # chmod 0640 $SNAP_COMMON/etc/cups/cupsd.conf
 fi
 
 # Create fonts.conf if not already present
@@ -89,48 +90,71 @@ perl -p -i \
      $SNAP_COMMON/etc/fonts/fonts.conf
 
 # Create snmp.conf if not already present
-if [ ! -f $SNAP_COMMON/etc/snmp.conf ]; then
+if [ ! -f $SNAP_COMMON/etc/cups/snmp.conf ]; then
     # Get default snmp.conf
-    cp $SNAP/etc/cups/snmp.conf $SNAP_COMMON/etc/
+    cp $SNAP/etc/cups/snmp.conf $SNAP_COMMON/etc/cups/
 fi
 
 # Get further default files but do not overwrite existing ones
-yes n | cp -ri $SNAP/etc/cups/ppd $SNAP_COMMON/etc/
-yes n | cp -ri $SNAP/etc/cups/ssl $SNAP_COMMON/etc/
+yes n | cp -ri $SNAP/etc/cups/ppd $SNAP_COMMON/etc/cups/
+yes n | cp -ri $SNAP/etc/cups/ssl $SNAP_COMMON/etc/cups/
 
 #chmod 711 $SNAP_DATA/var/run/certs/
 #chown root.root $SNAP_DATA/var/run/certs/
 
-# Make sure that port and domain socket of this snap are always used
+# Make sure that port and domain socket of this Snap are always used
+# Use standard port and domain socket if this is the first CUPS started
+# on this system (assumed to be the system's default CUPS)
 PORT=631
 ALTPORT=10631
-DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
+DOMAINSOCKET=/run/cups/cups.sock
+if [ ! -d /run/cups ]; then
+    DOMAINSOCKET=/var/run/cups/cups.sock
+fi
+ALTDOMAINSOCKET=$SNAP_COMMON/run/cups.sock
 
 # If the standard port 631 is occupied (by a system CUPS installed via
 # DEB/RPM/source for example) use alternative port
 if $SNAP/scripts/port-occupied $PORT; then
-    # CUPS already running (Debian packages), try alternative port
+    # CUPS already running, try alternative port
     PORT=$ALTPORT
 fi
 
+# If the standard domain socket is in use (by a system CUPS installed via
+# DEB/RPM/source for example) use alternative domain socket
+if lsof $DOMAINSOCKET > /dev/null 2>&1; then
+    # CUPS already running, try alternative port
+    DOMAINSOCKET=$ALTDOMAINSOCKET
+fi
+
 # Set the port in cupsd.conf
-cat $SNAP_COMMON/etc/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_COMMON/etc/cupsd.conf.new && \
-    echo Port $PORT > $SNAP_COMMON/etc/cupsd.conf && \
-    cat $SNAP_COMMON/etc/cupsd.conf.new >> $SNAP_COMMON/etc/cupsd.conf && \
-    rm $SNAP_COMMON/etc/cupsd.conf.new
+( cat $SNAP_COMMON/etc/cups/cupsd.conf | grep -v Listen | grep -v Port > $SNAP_COMMON/etc/cups/cupsd.conf.new || true ) && \
+    echo Port $PORT > $SNAP_COMMON/etc/cups/cupsd.conf && \
+    cat $SNAP_COMMON/etc/cups/cupsd.conf.new >> $SNAP_COMMON/etc/cups/cupsd.conf && \
+    rm -f $SNAP_COMMON/etc/cups/cupsd.conf.new
 
 # Set the domain socket in cupsd.conf
-cat $SNAP_COMMON/etc/cupsd.conf | grep -v Listen > $SNAP_COMMON/etc/cupsd.conf.new && \
-    echo Listen $DOMAINSOCKET > $SNAP_COMMON/etc/cupsd.conf && \
-    cat $SNAP_COMMON/etc/cupsd.conf.new >> $SNAP_COMMON/etc/cupsd.conf && \
-    rm $SNAP_COMMON/etc/cupsd.conf.new
+( cat $SNAP_COMMON/etc/cups/cupsd.conf | grep -v Listen > $SNAP_COMMON/etc/cups/cupsd.conf.new || true ) && \
+    echo Listen $DOMAINSOCKET > $SNAP_COMMON/etc/cups/cupsd.conf && \
+    cat $SNAP_COMMON/etc/cups/cupsd.conf.new >> $SNAP_COMMON/etc/cups/cupsd.conf && \
+    rm -f $SNAP_COMMON/etc/cups/cupsd.conf.new
+
+# Set the domain socket in client.conf
+touch $SNAP_COMMON/etc/cups/client.conf
+( cat $SNAP_COMMON/etc/cups/client.conf | grep -v ServerName > $SNAP_COMMON/etc/cups/client.conf.new || true ) && \
+    echo ServerName $DOMAINSOCKET > $SNAP_COMMON/etc/cups/client.conf && \
+    cat $SNAP_COMMON/etc/cups/client.conf.new >> $SNAP_COMMON/etc/cups/client.conf && \
+    rm -f $SNAP_COMMON/etc/cups/client.conf.new
 
 SCHEDULER=cupsd
 
 # Spawn cupsd in a way that we can grab its PID
-exec $SCHEDULER -f -s $SNAP_COMMON/etc/cups-files.conf -c $SNAP_COMMON/etc/cupsd.conf &
+exec $SCHEDULER -f -s $SNAP_COMMON/etc/cups/cups-files.conf -c $SNAP_COMMON/etc/cups/cupsd.conf &
 PID=$!
 echo $PID > $SNAP_DATA/var/run/cupsd.pid
 
 # Keep this script running until cupsd terminates
 wait $PID
+
+# Remove PID file as process is done
+rm -f $SNAP_DATA/var/run/cupsd.pid

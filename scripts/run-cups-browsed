@@ -5,11 +5,11 @@ set -e -x
 mkdir -p $SNAP_DATA/var/log
 mkdir -p $SNAP_DATA/var/cache
 mkdir -p $SNAP_DATA/var/run
-mkdir -p $SNAP_COMMON/etc
+mkdir -p $SNAP_COMMON/etc/cups
 
-CONF=$SNAP_COMMON/etc/cups-browsed.conf
+CONF=$SNAP_COMMON/etc/cups/cups-browsed.conf
+CLIENTCONF=$SNAP_COMMON/etc/cups/client.conf
 DAEMON=cups-browsed
-DOMAINSOCKET=$SNAP_DATA/var/run/cups.sock
 
 # Set UTF-8
 export LC_ALL=C.UTF-8
@@ -35,8 +35,32 @@ mkdir -p $TMPDIR
 #export CUPS_FONTPATH=$SNAP_DATA/share/cups/fonts
 #export CUPS_REQUESTROOT=$SNAP_DATA/var/spool
 #export CUPS_SERVERBIN=$SNAP_DATA/lib/cups
-#export CUPS_SERVERROOT=$SNAP_COMMON/etc
+#export CUPS_SERVERROOT=$SNAP_COMMON/etc/cups
 #export CUPS_STATEDIR=$SNAP_DATA/var/run
+
+# Wait for this Snap's CUPS coming up before preparing
+# cups-browsed.conf and starting cups-browsed, to assure
+# that it attaches to the correct CUPS
+CUPSSTARTED=0
+for i in $(seq 60); do
+    if [ -r ${SNAP_DATA}/var/run/cupsd.pid ]; then
+	PID=$(cat "${SNAP_DATA}/var/run/cupsd.pid" || true)
+	if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
+	    CUPSSTARTED=1
+	    break;
+	fi
+    fi
+    sleep 1
+done
+if [ "${CUPSSTARTED}" = "0" ]; then
+    echo "ERROR: CUPS startup timed out"
+    exit 1
+fi
+
+# Read domain socket from CUPS' client.conf
+DOMAINSOCKET=`grep -i ServerName $CLIENTCONF | cut -d ' ' -f 2`
+
+export CUPS_SERVER=$DOMAINSOCKET
 
 # Create cups-browsed.conf if not already present
 if  [ ! -f $CONF ]; then
@@ -64,3 +88,6 @@ echo $PID > $SNAP_DATA/var/run/cups-browsed.pid
 
 # Keep this script running until cups-browsed terminates
 wait $PID
+
+# Remove PID file as process is done
+rm -f $SNAP_DATA/var/run/cups-browsed.pid

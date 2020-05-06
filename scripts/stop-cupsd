@@ -3,11 +3,11 @@
 set -e -x
 
 # Exit if we are already shutting down cupsd
-if [ -f "${SNAP_COMMON}/pid/stop-cupsd.lock" ]; then
+if [ -f "${SNAP_DATA}/var/run/stop-cupsd.lock" ]; then
     echo "==> We are already shutting down cupsd"
     exit 0
 fi
-touch "${SNAP_COMMON}/pid/stop-cupsd.lock"
+touch "${SNAP_DATA}/var/run/stop-cupsd.lock"
 
 # Shut down cups-browsed first, so that it can remove its temporary queues
 # before CUPS shuts down
@@ -16,7 +16,7 @@ $SNAP/stop-cups-browsed
 
 # Shut down CUPS
 echo "==> Shutting down CUPS"
-PID=$(cat "${SNAP_COMMON}/pid/cupsd.pid" || true)
+PID=$(cat "${SNAP_DATA}/var/run/cupsd.pid" || true)
 if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
     kill -TERM "${PID}"
 
@@ -36,5 +36,5 @@ if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
 fi
 
 # Removing PID file
-rm -f "${SNAP_COMMON}/pid/cupsd.pid"
-rm -f "${SNAP_COMMON}/pid/stop-cupsd.lock"
+rm -f "${SNAP_DATA}/var/run/cupsd.pid"
+rm -f "${SNAP_DATA}/var/run/stop-cupsd.lock"

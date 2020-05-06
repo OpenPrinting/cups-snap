@@ -3,15 +3,15 @@
 set -e -x
 
 # Exit if we are already shutting down cups-browsed
-if [ -f "${SNAP_COMMON}/pid/stop-cups-browsed.lock" ]; then
+if [ -f "${SNAP_DATA}/var/run/stop-cups-browsed.lock" ]; then
     echo "==> We are already shutting down cups-browsed"
     exit 0
 fi
-touch "${SNAP_COMMON}/pid/stop-cups-browsed.lock"
+touch "${SNAP_DATA}/var/run/stop-cups-browsed.lock"
 
 # Shut down cups-browsed
 echo "==> Shutting down cups-browsed"
-PID=$(cat "${SNAP_COMMON}/pid/cups-browsed.pid" || true)
+PID=$(cat "${SNAP_DATA}/var/run/cups-browsed.pid" || true)
 if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
     kill -TERM "${PID}"
 
@@ -31,5 +31,5 @@ if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
 fi
 
 # Removing PID file
-rm -f "${SNAP_COMMON}/pid/cups-browsed.pid"
-rm -f "${SNAP_COMMON}/pid/stop-cups-browsed.lock"
+rm -f "${SNAP_DATA}/var/run/cups-browsed.pid"
+rm -f "${SNAP_DATA}/var/run/stop-cups-browsed.lock"
