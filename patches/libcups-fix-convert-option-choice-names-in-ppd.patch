@@ -1,0 +1,99 @@
+From: Till Kamppeter <till.kamppeter@gmail.com>
+Date: Mon, 17 Feb 2020 09:05:58 +0100
+Subject: Fix conversion of PPD InputSlot choice names
+
+When I create a CUPS queue with a PPD file with choice names "Tray-1", "Tray-2",
+... in the InputSlot option CUPS translates these names to double-dashed IPP
+attribute names: "tray--1", "tray--2", ... in the "media-source" attribute, both
+when passing a job to the printer with the IPP backend, making the printer
+ignore the tray choice, and also when answering a get-printer-attributes IPP
+request from a client. This happens when in the PPD a dash is followed by a
+digit, as the pwg_unppdize_name() function in cups/ppd-cache.c inserts a dash
+whenever a non-digit is followed by a digit in the PPD name. As IPP attribute
+names generally never have double-dashes and also no dashes in the beginning or
+the end of the name, I have modified the pwg_unppdize_name() function
+appropriately.
+
+Bug: https://github.com/apple/cups/issues/5740
+Bug-Debian: https://bugs.debian.org/949315
+---
+ cups/ppd-cache.c | 47 ++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 38 insertions(+), 9 deletions(-)
+
+diff --git a/cups/ppd-cache.c b/cups/ppd-cache.c
+index 5965e38..6609f53 100644
+--- a/cups/ppd-cache.c
++++ b/cups/ppd-cache.c
+@@ -5140,6 +5140,8 @@ pwg_unppdize_name(const char *ppd,	/* I - PPD keyword */
+ {
+   char	*ptr,				/* Pointer into name buffer */
+ 	*end;				/* End of name buffer */
++  int   nodash = 1;                     /* Next char in IPP name cannot be a
++                                           dash (first char or after a dash) */
+ 
+ 
+   if (_cups_islower(*ppd))
+@@ -5151,7 +5153,9 @@ pwg_unppdize_name(const char *ppd,	/* I - PPD keyword */
+     const char *ppdptr;			/* Pointer into PPD keyword */
+ 
+     for (ppdptr = ppd + 1; *ppdptr; ppdptr ++)
+-      if (_cups_isupper(*ppdptr) || strchr(dashchars, *ppdptr))
++      if (_cups_isupper(*ppdptr) || strchr(dashchars, *ppdptr) ||
++	  (*ppdptr == '-' && *(ppdptr - 1) == '-') ||
++	  (*ppdptr == '-' && *(ppdptr + 1) == '\0'))
+         break;
+ 
+     if (!*ppdptr)
+@@ -5163,19 +5167,44 @@ pwg_unppdize_name(const char *ppd,	/* I - PPD keyword */
+ 
+   for (ptr = name, end = name + namesize - 1; *ppd && ptr < end; ppd ++)
+   {
+-    if (_cups_isalnum(*ppd) || *ppd == '-')
++    if (_cups_isalnum(*ppd))
++    {
+       *ptr++ = (char)tolower(*ppd & 255);
+-    else if (strchr(dashchars, *ppd))
+-      *ptr++ = '-';
++      nodash = 0;
++    }
++    else if (*ppd == '-' || strchr(dashchars, *ppd))
++    {
++      if (nodash == 0)
++      {
++	*ptr++ = '-';
++	nodash = 1;
++      }
++    }
+     else
++    {
+       *ptr++ = *ppd;
++      nodash = 0;
++    }
+ 
+-    if (!_cups_isupper(*ppd) && _cups_isalnum(*ppd) &&
+-	_cups_isupper(ppd[1]) && ptr < end)
+-      *ptr++ = '-';
+-    else if (!isdigit(*ppd & 255) && isdigit(ppd[1] & 255))
+-      *ptr++ = '-';
++    if (nodash == 0)
++    {
++      if (!_cups_isupper(*ppd) && _cups_isalnum(*ppd) &&
++	  _cups_isupper(ppd[1]) && ptr < end)
++      {
++	*ptr++ = '-';
++	nodash = 1;
++      }
++      else if (!isdigit(*ppd & 255) && isdigit(ppd[1] & 255))
++      {
++	*ptr++ = '-';
++	nodash = 1;
++      }
++    }
+   }
+ 
++  /* Remove trailing dashes */
++  while (ptr > name && *(ptr - 1) == '-')
++    ptr --;
++
+   *ptr = '\0';
+ }

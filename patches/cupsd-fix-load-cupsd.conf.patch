@@ -1,0 +1,86 @@
+From: Till Kamppeter <till.kamppeter@gmail.com>
+Date: Sat, 22 Feb 2020 14:28:58 +0100
+Subject: Fix scheduler cupsd.conf load
+
+When running it without arguments it is supposed to read the local CUPS's
+cupsd.conf and show a summary of the setting. in CUPS 2.3.1 it shows a mess
+with a lot of HTML inside and this is due to the fact that when loading the
+file via HTTP using the /admin/cups/cupsd.conf path the scheduler calls the
+admin.cgi program which returns the admin front page of the web admin
+interface. cupsctl then tries to interpret that as the config file and displays
+garbage. Even worse is if you run cupsctl with command line argument (one of
+the five switches or a key=value pair) to change a setting. It seems to load
+cupsd.conf again and gets again the HTML code of the web interface page.
+cupsctl tries to interpret this again, producing garbage, adds the
+user-supplied setting and writes all this back into cupsd.conf. Then it tries
+to restart the scheduler which fails due to the broken config file.
+The problem is that in the file scheduler/client.conf, in the function
+get_file() the URI from the client is at first checked whether it begins with
+"/admin/" and in this case the CGI program admin.cgi is responsible. Only after
+that the check for "/admin/conf/cupsd.conf" comes and is never reached.
+I have changed the order now appropriately and this way cupsctl works again.
+Note that the problem only occurs if the web interface is active and the
+cupsctl command is issued by a non-root user.
+This is a regression caused by issue #5652.
+
+Bug: https://github.com/apple/cups/issues/5744
+---
+ scheduler/client.c | 38 +++++++++++++++++++-------------------
+ 1 file changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/scheduler/client.c b/scheduler/client.c
+index c2ee8f1..54b841b 100644
+--- a/scheduler/client.c
++++ b/scheduler/client.c
+@@ -2789,6 +2789,25 @@ get_file(cupsd_client_t *con,		/* I  - Client connection */
+ 
+     perm_check = 0;
+   }
++  else if (!strcmp(con->uri, "/admin/conf/cupsd.conf"))
++  {
++    strlcpy(filename, ConfigurationFile, len);
++
++    perm_check = 0;
++  }
++  else if (!strncmp(con->uri, "/admin/log/", 11))
++  {
++    if (!strncmp(con->uri + 11, "access_log", 10) && AccessLog[0] == '/')
++      strlcpy(filename, AccessLog, len);
++    else if (!strncmp(con->uri + 11, "error_log", 9) && ErrorLog[0] == '/')
++      strlcpy(filename, ErrorLog, len);
++    else if (!strncmp(con->uri + 11, "page_log", 8) && PageLog[0] == '/')
++      strlcpy(filename, PageLog, len);
++    else
++      return (NULL);
++
++    perm_check = 0;
++  }
+   else if (!strncmp(con->uri, "/admin", 6) || !strncmp(con->uri, "/classes", 8) || !strncmp(con->uri, "/jobs", 5) || !strncmp(con->uri, "/printers", 9))
+   {
+    /*
+@@ -2822,25 +2841,6 @@ get_file(cupsd_client_t *con,		/* I  - Client connection */
+ 
+     perm_check = 0;
+   }
+-  else if (!strcmp(con->uri, "/admin/conf/cupsd.conf"))
+-  {
+-    strlcpy(filename, ConfigurationFile, len);
+-
+-    perm_check = 0;
+-  }
+-  else if (!strncmp(con->uri, "/admin/log/", 11))
+-  {
+-    if (!strncmp(con->uri + 11, "access_log", 10) && AccessLog[0] == '/')
+-      strlcpy(filename, AccessLog, len);
+-    else if (!strncmp(con->uri + 11, "error_log", 9) && ErrorLog[0] == '/')
+-      strlcpy(filename, ErrorLog, len);
+-    else if (!strncmp(con->uri + 11, "page_log", 8) && PageLog[0] == '/')
+-      strlcpy(filename, PageLog, len);
+-    else
+-      return (NULL);
+-
+-    perm_check = 0;
+-  }
+   else if (con->language)
+   {
+     snprintf(language, sizeof(language), "/%s", con->language->language);

@@ -116,6 +116,8 @@ parts:
         patch -p0 < $SNAPCRAFT_STAGE/patches/cups-deviced-allow-run-by-root.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-extra-check-for-admin-tasks-snap-cups-control.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/libcups-fix-convert-option-choice-names-in-ppd.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-fix-load-cupsd.conf.patch
         sed -i 's|fchown(cupsFileNumber(fp), getuid(), Group)|0|g' scheduler/file.c
         sed -i 's|(fchmod(cupsFileNumber(fp), mode))|(0)|g' scheduler/file.c
         sed -i 's|chown(filename, user, group)|0|g' scheduler/conf.c
