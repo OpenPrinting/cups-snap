@@ -85,8 +85,11 @@ fi
 
 # Set paths for the snap
 perl -p -i \
+     -e 's:<dir>\S*/share/cups/fonts</dir>:<dir>'"$SNAP"'/share/cups/fonts</dir>:;' \
      -e 's:<dir>\S*/usr/share/fonts</dir>:<dir>'"$SNAP"'/share/cups/fonts</dir>:;' \
      -e 's:<cachedir>\S*/var/cache/fontconfig</cachedir>:<cachedir>'"$SNAP_DATA"'/var/cache/fontconfig</cachedir>:;' \
+     -e 's:<(cache|)dir>/usr/\S*</(cache|)dir>::;' \
+     -e 's:<(cache|)dir>~\S*</(cache|)dir>::;' \
      $SNAP_COMMON/etc/fonts/fonts.conf
 
 # Create snmp.conf if not already present
