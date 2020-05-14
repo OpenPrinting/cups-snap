@@ -117,17 +117,8 @@ parts:
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-extra-check-for-admin-tasks-snap-cups-control.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/libcups-fix-convert-option-choice-names-in-ppd.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-fix-load-cupsd.conf.patch
-        sed -i 's|fchown(cupsFileNumber(fp), getuid(), Group)|0|g' scheduler/file.c
-        sed -i 's|(fchmod(cupsFileNumber(fp), mode))|(0)|g' scheduler/file.c
-        sed -i 's|chown(filename, user, group)|0|g' scheduler/conf.c
         sed -i 's|setgroups(1, &Group)|0|g' scheduler/process.c
         sed -i 's|setgroups(1, &gid)|0|g' scheduler/cups-exec.c
-        sed -i 's|fchown(|// fchown(|g' cups/*.c
-        sed -i 's|chown(|// chown(|g' cups/*.c
-        sed -i 's|fchmod(|// fchmod(|g' cups/*.c
-        sed -i 's|chmod(|// chmod(|g' cups/*.c
-        sed -i 's|fchown(|// fchown(|g' scheduler/*.c
-        sed -i 's|fchmod(|// fchmod(|g' scheduler/*.c
         sed -i 's|"\$sysconfdir/cups")|"/var/snap/printing-stack-snap/common/etc/cups")|g' config-scripts/cups-directories.m4
         autoconf
         snapcraftctl build
@@ -268,7 +259,6 @@ parts:
     plugin: nil
     source: .
     stage-packages:
-        - lsof
         - perl-base
         - sed
         - grep

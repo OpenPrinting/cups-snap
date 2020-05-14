@@ -125,7 +125,7 @@ fi
 
 # If the standard domain socket is in use (by a system CUPS installed via
 # DEB/RPM/source for example) use alternative domain socket
-if lsof $DOMAINSOCKET > /dev/null 2>&1; then
+if $SNAP/bin/lpstat -h $DOMAINSOCKET -r | grep -qv ' not '; then
     # CUPS already running, try alternative port
     DOMAINSOCKET=$ALTDOMAINSOCKET
 fi
