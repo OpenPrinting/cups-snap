@@ -6,6 +6,12 @@ description: Complete printing environment in a snap
 grade: devel
 confinement: strict
 
+# System user for filters and backends to drop privileges, "lp" is not
+# availabl in a Snap
+# See https://forum.snapcraft.io/t/system-usernames/
+system-usernames:
+  snap_daemon: shared
+
 plugs:
   system-config:
     interface: system-files
@@ -120,6 +126,7 @@ parts:
         sed -i 's|setgroups(1, &Group)|0|g' scheduler/process.c
         sed -i 's|setgroups(1, &gid)|0|g' scheduler/cups-exec.c
         sed -i 's|"\$sysconfdir/cups")|"/var/snap/printing-stack-snap/common/etc/cups")|g' config-scripts/cups-directories.m4
+        rm configure
         autoconf
         snapcraftctl build
     stage:
