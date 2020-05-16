@@ -134,6 +134,7 @@ parts:
     configflags:
         - --with-system-groups=root
         - --disable-pam
+        - --disable-systemd
         #- --enable-debug-printfs
     build-packages:
         - patch
