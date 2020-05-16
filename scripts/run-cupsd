@@ -29,18 +29,19 @@ mkdir -p $TMPDIR
 export FONTCONFIG_FILE=$SNAP_COMMON/etc/fonts/fonts.conf
 
 # Check whether the user and group "snap_daemon" for filters and
-# backends exist and only if not run filters and backends as
-# root. Note that in a Snap you can only use the user "snap_daemon"
-# (UID 584788) for processes which should drop the root privileges
-# (daemons or auxiliary processes of daemons, here filters and
-# backends). The CUPS user "lp" cannot be used.
+# backends exist and the Snap is allowed to use it and only if not run
+# filters and backends as root. Note that in a Snap you can only use
+# the user "snap_daemon" (UID 584788) for processes which should drop
+# the root privileges (daemons or auxiliary processes of daemons, here
+# filters and backends). The CUPS user "lp" cannot be used.
 # See https://forum.snapcraft.io/t/system-usernames/
 # Also check the existence of the "lpadmin" group. Members of this
 # group are allowed to do administrative CUPS tasks, like creating
 # print queues or deleting other user's jobs. If this group does not
-# exits, use the general administration group "adm" instead. On Ubuntu
-# distributions the first user crated is in both "adm" and "lpadmin"
-# groups.
+# exist, use the general administration group "adm" instead and go
+# root-only for administrative tasks if also this group does not
+# exist. On Ubuntu distributions the first user created is in both
+# "adm" and "lpadmin" groups.
 CUPSUSER=snap_daemon
 ALTCUPSUSER=root
 CUPSGROUP=snap_daemon
@@ -50,18 +51,20 @@ ALTCUPSSYSTEMGROUP=adm
 
 TESTFILE=$TMPDIR/testfile
 touch $TESTFILE
-
 if ! chown $CUPSUSER $TESTFILE; then
     CUPSUSER=$ALTCUPSUSER;
 fi
 if ! chgrp $CUPSGROUP $TESTFILE; then
     CUPSGROUP=$ALTCUPSGROUP;
 fi
-if ! chgrp $CUPSSYSTEMGROUP $TESTFILE; then
-    CUPSSYSTEMGROUP=$ALTCUPSSYSTEMGROUP;
-fi
-
 rm -f $TESTFILE
+
+if ! getent group $CUPSSYSTEMGROUP >/dev/null 2>&1; then
+    CUPSSYSTEMGROUP=$ALTCUPSSYSTEMGROUP;
+    if ! getent group $CUPSSYSTEMGROUP >/dev/null 2>&1; then
+	CUPSSYSTEMGROUP=;
+    fi
+fi
 
 # Create cups-files.conf if not already present
 if [ ! -f $SNAP_COMMON/etc/cups/cups-files.conf ]; then
