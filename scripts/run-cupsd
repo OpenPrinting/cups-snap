@@ -162,8 +162,10 @@ if $SNAP/scripts/port-occupied $PORT; then
 fi
 
 # If the standard domain socket is in use (by a system CUPS installed via
-# DEB/RPM/source for example) use alternative domain socket
-if $SNAP/bin/lpstat -h $DOMAINSOCKET -r | grep -qv ' not '; then
+# DEB/RPM/source for example) or when lpstat errors when querying it
+# use alternative domain socket
+if ! $SNAP/bin/lpstat -h $DOMAINSOCKET -r || \
+   $SNAP/bin/lpstat -h $DOMAINSOCKET -r | grep -qv ' not '; then
     # CUPS already running, try alternative port
     DOMAINSOCKET=$ALTDOMAINSOCKET
 fi
