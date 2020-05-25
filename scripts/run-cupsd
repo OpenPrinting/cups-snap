@@ -77,7 +77,7 @@ fi
 perl -p -i \
      -e 's:^(\s*\#)?\s*User\s+\S+\s*$:User '"$CUPSUSER"'\n:;' \
      -e 's:^(\s*\#)?\s*Group\s+.*$:Group '"$CUPSGROUP"':;' \
-     -e 's:^(\s*\#)?\s*SystemGroup\s+.*$:SystemGroup root '"$CUPSSYSTEMGROUP"':;' \
+     -e 's:^(\s*\#)?\s*SystemGroup\s+.*$:SystemGroup '"$CUPSSYSTEMGROUP"' root:;' \
      -e 's:^(\s*\#)?\s*AccessLog\s+.*$:AccessLog '"$SNAP_DATA"'/var/log/access_log:;' \
      -e 's:^(\s*\#)?\s*CacheDir\s+.*$:CacheDir '"$SNAP_DATA"'/var/cache:;' \
      -e 's:^(\s*\#)?\s*DataDir\s+.*$:DataDir '"$SNAP"'/share/cups:;' \
