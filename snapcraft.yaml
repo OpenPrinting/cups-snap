@@ -116,6 +116,7 @@ parts:
         set -eux
         patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-pass-on-ld-library-path.patch
         patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-pass-on-path.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-certs-dir-root-owned-and-writable.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-extra-check-for-admin-tasks-snap-cups-control.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/libcups-fix-convert-option-choice-names-in-ppd.patch
