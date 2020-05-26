@@ -134,14 +134,12 @@ perl -p -i \
 if [ ! -f $SNAP_COMMON/etc/cups/snmp.conf ]; then
     # Get default snmp.conf
     cp $SNAP/etc/cups/snmp.conf $SNAP_COMMON/etc/cups/
+    chmod 644 $SNAP_COMMON/etc/cups/snmp.conf
 fi
 
 # Get further default files but do not overwrite existing ones
 yes n | cp -ri $SNAP/etc/cups/ppd $SNAP_COMMON/etc/cups/
 yes n | cp -ri $SNAP/etc/cups/ssl $SNAP_COMMON/etc/cups/
-
-#chmod 711 $SNAP_DATA/var/run/certs/
-#chown root.root $SNAP_DATA/var/run/certs/
 
 # Make sure that port and domain socket of this Snap are always used
 # Use standard port and domain socket if this is the first CUPS started
