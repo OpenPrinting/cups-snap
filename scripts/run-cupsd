@@ -15,9 +15,31 @@ mkdir -p $SNAP_COMMON/run
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
-# Set a general TMPDIR
+# Set a general TMPDIR (for command line utilities)
 export TMPDIR=$SNAP_DATA/tmp
 mkdir -p $TMPDIR
+
+# The CUPS temp dir (for cupsd, filters, backends, CGI programs, ...)
+CUPSTMPDIR=$SNAP_DATA/var/spool/tmp
+
+# Clean up the temporary directories
+# We need to chown all files to root and make the files and directories
+# accessible for root, otherwise we cannot delete them inside a Snap
+for DIR in $TMPDIR $CUPSTMPDIR; do
+    while [ -d $DIR ]; do
+	chown -R root.root $DIR
+	chmod -R u+rwX $DIR
+	rm -rf $DIR
+    done
+done
+
+# Initialize the temp directories
+mkdir -p $TMPDIR
+chown -R root.root $TMPDIR
+chmod -R 1777 $TMPDIR
+mkdir -p $CUPSTMPDIR
+chown -R root.snap_daemon $CUPSTMPDIR
+chmod -R 1770 $CUPSTMPDIR
 
 # Activate full debug logging of cupsd and libcups
 # (Needs "- --enable-debug-printfs" be uncommented in CUPS' configflags
