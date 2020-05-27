@@ -1,0 +1,39 @@
+diff --git a/scheduler/cert.c b/scheduler/cert.c
+index 258e8fc83..ecaa58f11 100644
+--- a/scheduler/cert.c
++++ b/scheduler/cert.c
+@@ -83,6 +83,7 @@ cupsdAddCert(int        pid,		/* I - Process ID */
+ 
+   if (pid == 0)
+   {
++#if 0 /* Does not work in Snap */
+ #ifdef HAVE_ACL_INIT
+     acl_t		acl;		/* ACL information */
+     acl_entry_t		entry;		/* ACL entry */
+@@ -93,6 +94,7 @@ cupsdAddCert(int        pid,		/* I - Process ID */
+     static int		acls_not_supported = 0;
+ 					/* Only warn once */
+ #endif /* HAVE_ACL_INIT */
++#endif /* 0 - Does not work in Snap */
+ 
+ 
+    /*
+@@ -100,8 +102,9 @@ cupsdAddCert(int        pid,		/* I - Process ID */
+     */
+ 
+     fchmod(fd, 0440);
+-    fchown(fd, RunUser, SystemGroupIDs[0]);
++    fchown(fd, RunUser, 0);
+ 
++#if 0 /* Does not work in Snap */
+     cupsdLogMessage(CUPSD_LOG_DEBUG2, "cupsdAddCert: NumSystemGroups=%d", NumSystemGroups);
+ 
+ #ifdef HAVE_ACL_INIT
+@@ -231,6 +234,7 @@ cupsdAddCert(int        pid,		/* I - Process ID */
+       acl_free(acl);
+     }
+ #endif /* HAVE_ACL_INIT */
++#endif /* 0 - Does not work in Snap */
+ 
+     RootCertTime = time(NULL);
+   }
