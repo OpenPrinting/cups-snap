@@ -8,7 +8,7 @@ mkdir -p $SNAP_DATA/var/log
 mkdir -p $SNAP_DATA/var/cache/fontconfig
 mkdir -p $SNAP_COMMON/etc/cups/ppd
 mkdir -p $SNAP_COMMON/etc/cups/ssl
-mkdir -p $SNAP_COMMON/etc/fonts
+mkdir -p $SNAP_COMMON/etc/fonts/conf.d
 mkdir -p $SNAP_COMMON/run
 
 # Set UTF-8
@@ -25,8 +25,10 @@ mkdir -p $TMPDIR
 #export CUPS_DEBUG_LOG=$SNAP_DATA/var/log/debug_log
 #export CUPS_DEBUG_LEVEL=99
 
-# Config file for fontconfig
+# Config file and directories for fontconfig
 export FONTCONFIG_FILE=$SNAP_COMMON/etc/fonts/fonts.conf
+export FONTCONFIG_PATH=$SNAP/etc/fonts/conf.d
+export FONTCONFIG_SYSROOT=$SNAP/etc/fonts
 
 # Check whether the user and group "snap_daemon" for filters and
 # backends exist and the Snap is allowed to use it and only if not run
@@ -94,7 +96,10 @@ perl -p -i \
      $SNAP_COMMON/etc/cups/cups-files.conf
 grep -q 'PassEnv FONTCONFIG_FILE' $SNAP_COMMON/etc/cups/cups-files.conf ||
     echo PassEnv FONTCONFIG_FILE >> $SNAP_COMMON/etc/cups/cups-files.conf
-# chmod 0640 $SNAP_COMMON/etc/cups/cups-files.conf
+grep -q 'PassEnv FONTCONFIG_PATH' $SNAP_COMMON/etc/cups/cups-files.conf ||
+    echo PassEnv FONTCONFIG_PATH >> $SNAP_COMMON/etc/cups/cups-files.conf
+grep -q 'PassEnv FONTCONFIG_SYSROOT' $SNAP_COMMON/etc/cups/cups-files.conf ||
+    echo PassEnv FONTCONFIG_SYSROOT >> $SNAP_COMMON/etc/cups/cups-files.conf
 
 # Create cupsd.conf if not already present
 if [ ! -f $SNAP_COMMON/etc/cups/cupsd.conf ]; then
@@ -115,10 +120,10 @@ if [ ! -f $SNAP_COMMON/etc/cups/cupsd.conf ]; then
 fi
 
 # Create fonts.conf if not already present
-if [ ! -f $SNAP_COMMON/etc/fonts/fonts.conf ]; then
+if [ ! -f $FONTCONFIG_FILE ]; then
     # Get default fonts.conf
     FONTSCONF=$SNAP/etc/fonts/fonts.conf
-    cp $FONTSCONF $SNAP_COMMON/etc/fonts/fonts.conf
+    cp $FONTSCONF $FONTCONFIG_FILE
 fi
 
 # Set paths for the snap
@@ -128,7 +133,7 @@ perl -p -i \
      -e 's:<cachedir>\S*/var/cache/fontconfig</cachedir>:<cachedir>'"$SNAP_DATA"'/var/cache/fontconfig</cachedir>:;' \
      -e 's:<(cache|)dir>/usr/\S*</(cache|)dir>::;' \
      -e 's:<(cache|)dir>~\S*</(cache|)dir>::;' \
-     $SNAP_COMMON/etc/fonts/fonts.conf
+     $FONTCONFIG_FILE
 
 # Create snmp.conf if not already present
 if [ ! -f $SNAP_COMMON/etc/cups/snmp.conf ]; then
