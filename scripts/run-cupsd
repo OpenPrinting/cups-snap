@@ -105,7 +105,7 @@ perl -p -i \
      -e 's:^(\s*\#)?\s*AccessLog\s+.*$:AccessLog '"$SNAP_DATA"'/var/log/access_log:;' \
      -e 's:^(\s*\#)?\s*CacheDir\s+.*$:CacheDir '"$SNAP_DATA"'/var/cache:;' \
      -e 's:^(\s*\#)?\s*DataDir\s+.*$:DataDir '"$SNAP"'/share/cups:;' \
-     -e 's:^(\s*\#)?\s*DocumentRoot\s+.*$:DocumentRoot '"$SNAP"'/share/doc/cups:;' \
+     -e 's:^(\s*\#)?\s*DocumentRoot\s+.*$:DocumentRoot '"$SNAP"'/share/cups/doc:;' \
      -e 's:^(\s*\#)?\s*ErrorLog\s+.*$:ErrorLog '"$SNAP_DATA"'/var/log/error_log:;' \
      -e 's:^(\s*\#)?\s*FontPath\s+.*$:FontPath '"$SNAP"'/share/cups/fonts:;' \
      -e 's:^(\s*\#)?\s*PageLog\s+.*$:PageLog '"$SNAP_DATA"'/var/log/page_log:;' \
