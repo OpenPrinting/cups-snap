@@ -201,6 +201,7 @@ parts:
         - -usr/share/man
         - -usr/share/doc
         - -usr/share/doc-base
+        - -lib/libqpdf.a
   ghostscript:
     source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs952/ghostscript-9.52.tar.gz
     plugin: autotools
@@ -283,6 +284,8 @@ parts:
         - -usr/share/man
         - -usr/share/doc
         - -usr/share/doc-base
+        - -lib/libcupsfilters.a
+        - -lib/libfontembed.a
     after: [cups, qpdf, ghostscript]
   selected-fonts: # Temporary, fonts should come from the system
     plugin: nil
