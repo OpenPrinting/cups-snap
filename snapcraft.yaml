@@ -132,6 +132,7 @@ parts:
         - --with-system-groups=root
         - --disable-pam
         - --disable-systemd
+        - --without-rcdir
         - --with-docdir=/share/cups/doc
         #- --enable-debug-printfs
     build-packages:
@@ -237,6 +238,7 @@ parts:
     plugin: autotools
     configflags:
         - --disable-mutool
+        - --without-rcdir
     build-packages:
         - autoconf
         - autotools-dev
