@@ -294,8 +294,10 @@ parts:
     source: .
     stage-packages:
         - fonts-freefont-ttf
+        - fonts-arphic-uming
     organize:
       usr/share/fonts/truetype/freefont/: share/cups/fonts/
+      usr/share/fonts/truetype/arphic/: share/cups/fonts/
     prime:
         - share/cups/fonts/*
   utils:
