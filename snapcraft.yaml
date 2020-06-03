@@ -178,13 +178,17 @@ parts:
         - libsoup2.4-1
         - libxml2
     prime:
+        - -etc/fonts
         - -var
         - -include
         - -share/man
         - -share/doc
+        - -share/lintian
+        - -usr/share/fonts
         - -usr/share/man
         - -usr/share/doc
         - -usr/share/doc-base
+        - -usr/share/lintian
     after: [cups-patches]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.0.1/qpdf-10.0.1.tar.gz
@@ -195,13 +199,17 @@ parts:
     stage-packages:
         - libjpeg-turbo8
     prime:
+        - -etc/fonts
         - -var
         - -include
         - -share/man
         - -share/doc
+        - -share/lintian
+        - -usr/share/fonts
         - -usr/share/man
         - -usr/share/doc
         - -usr/share/doc-base
+        - -usr/share/lintian
         - -lib/libqpdf.a
   ghostscript:
     source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs952/ghostscript-9.52.tar.gz
@@ -223,13 +231,18 @@ parts:
         - libfreetype6
         - libpng16-16
     prime:
+        - -etc/fonts
         - -var
         - -include
         - -share/man
         - -share/doc
+        - -share/lintian
+        - -usr/share/fonts
         - -usr/share/man
         - -usr/share/doc
         - -usr/share/doc-base
+        - -usr/share/lintian
+        - -snap/printing-stack-snap
     organize:
       snap/printing-stack-snap/current/share: share
     after: [cups]
@@ -279,13 +292,17 @@ parts:
         - libwind0-heimdal
         - libdb5.3
     prime:
+        - -etc/fonts
         - -var
         - -include
         - -share/man
         - -share/doc
+        - -share/lintian
+        - -usr/share/fonts
         - -usr/share/man
         - -usr/share/doc
         - -usr/share/doc-base
+        - -usr/share/lintian
         - -lib/libcupsfilters.a
         - -lib/libfontembed.a
     after: [cups, qpdf, ghostscript]
@@ -299,6 +316,7 @@ parts:
       usr/share/fonts/truetype/freefont/: share/cups/fonts/
       usr/share/fonts/truetype/arphic/: share/cups/fonts/
     prime:
+        - etc/fonts/*
         - share/cups/fonts/*
   utils:
     plugin: nil
@@ -319,8 +337,11 @@ parts:
         - bin/
         - lib/
         - share/
+        - -share/gdb
+        - -share/info
         - -share/man
         - -share/doc
+        - -share/lintian
   scripts:
     plugin: dump
     source: scripts/
