@@ -53,14 +53,26 @@ apps:
   lpstat:
     command: lpstat
     plugs: [network, avahi-control, system-config, cups-domain-socket]
+  lpq:
+    command: lpq
+    plugs: [network, avahi-control, system-config, cups-domain-socket]
+  lpc:
+    command: lpc
+    plugs: [network, avahi-control, system-config, cups-domain-socket]
   lpoptions:
     command: lpoptions
     plugs: [network, avahi-control, home, system-config, cups-domain-socket]
   lp:
     command: lp
     plugs: [network, avahi-control, home, system-config, cups-domain-socket]
+  lpr:
+    command: lpr
+    plugs: [network, avahi-control, home, system-config, cups-domain-socket]
   cancel:
     command: cancel
+    plugs: [network, avahi-control, system-config, cups-domain-socket, cups-control]
+  lprm:
+    command: lprm
     plugs: [network, avahi-control, system-config, cups-domain-socket, cups-control]
   cupsenable:
     command: cupsenable
