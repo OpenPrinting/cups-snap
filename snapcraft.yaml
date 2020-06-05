@@ -259,7 +259,7 @@ parts:
       snap/printing-stack-snap/current/share: share
     after: [cups]
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.4.tar.xz
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.5.tar.xz
     plugin: autotools
     configflags:
         - --disable-mutool
