@@ -154,6 +154,7 @@ parts:
         - libtool
         - autotools-dev
         - pkg-config
+        - g++
         - ghostscript
         - libavahi-client-dev
         - libavahi-common-dev
@@ -206,6 +207,7 @@ parts:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.0.1/qpdf-10.0.1.tar.gz
     plugin: autotools
     build-packages:
+        - g++
         - libjpeg-dev
         - zlib1g-dev
     stage-packages:
@@ -269,6 +271,7 @@ parts:
         - autoconf
         - autotools-dev
         - pkg-config
+        - g++
         - sharutils
         - poppler-utils
         - libglib2.0-dev
