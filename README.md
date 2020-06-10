@@ -25,7 +25,7 @@ Note that running two CUPS instances on one system is not recommended on product
 The snap is currently in the Edge channel of the snap store and therefore can be installed via
 
 ```
-snap install --edge printing-stack-snap
+snap install --edge cups
 ```
 
 If you want to install from source, you have to build it via
@@ -44,7 +44,7 @@ with `<file>.snap` being the name of the snap file.
 
 You also need to manually connect the snap to the Avahi interface. On classic systems run:
 ```
-sudo snap connect printing-stack-snap:avahi-control
+sudo snap connect cups:avahi-control
 ```
 On snap-based systems install the Avahi snap at first
 ```
@@ -52,37 +52,37 @@ sudo snap install --edge avahi
 ```
 and connect to the avahi snap:
 ```
-sudo snap connect printing-stack-snap:avahi-control avahi
+sudo snap connect cups:avahi-control avahi
 ```
 This allows sharing of printers between your system's CUPS and the snap's CUPS. cups-browsed (one instance on the system, one in the snap) automatically creates appropriate queues. Avahi does not yet work completely on snap-based systems as printers on the snap-based system get shared to remote machines but printers on remote machines do not get discovered by the snap-based system.
 
 For USB printer access you need to connect to the raw-usb interface on both classic and snap-based systems:
 ```
-sudo snap connect printing-stack-snap:raw-usb
+sudo snap connect cups:raw-usb
 ```
 
 On classic systems the snap has already access to the user's home directory, on a snap-based system you need to run:
 ```
-snap connect printing-stack-snap:home
+snap connect cups:home
 ```
 
 If there is already a CUPS instance running on your system, The snap's CUPS will run on port 10631.
 
-To use use the snap's command line utilities acting on the snap's CUPS, preceed the commands with `printing-stack-snap.`:
+To use use the snap's command line utilities acting on the snap's CUPS, preceed the commands with `cups.`:
 ```
-printing-stack-snap.lpstat -v
-printing-stack-snap.cupsctl
-printing-stack-snap.lpadmin -p printer -E -v file:/dev/null
+cups.lpstat -v
+cups.cupsctl
+cups.lpadmin -p printer -E -v file:/dev/null
 ```
 You can run administrative commands without `sudo` and without getting asked for a password if you are member of the "adm" group (this is the case for the first user created on a classic Ubuntu system). This is a temporary hack until snapd is able to deal with snap-specific users and groups. This works on classic systems (you can also add a user to the "adm" group) but not on snap-based systems (the standard user is not in the "adm" group and you cannot add users to the "adm" group). You can always run administrative programs as root (for example running them with `sudo`).
 
 The snap's command line utilities can only access files in the calling user's home directory if they are not hidden (name begins with a dot '`.`'). So you can ususally print with a command like
 ```
-printing-stack-snap.lp -d <printer> <file>
+cups.lp -d <printer> <file>
 ```
 For hidden files you have to pipe the file into the command, like with
 ```
-cat <file> | printing-stack-snap.lp -d <printer>
+cat <file> | cups.lp -d <printer>
 ```
 or copy or rename the file into a standard file.
 
@@ -92,8 +92,8 @@ http://localhost:10631/
 ```
 but to make administrative tasks working, you have to run the following commands after installing the snap:
 ```
-sudo chmod 711 /var/snap/printing-stack-snap/current/var/run/certs/
-sudo chown root.root /var/snap/printing-stack-snap/current/var/run/certs/
+sudo chmod 711 /var/snap/cups/current/var/run/certs/
+sudo chown root.root /var/snap/cups/current/var/run/certs/
 ```
 
 You can also access the snap's CUPS with the system's utilities by specifying the server (example if the snap's CUPS runs in parallel with a system's one, on port 10631):

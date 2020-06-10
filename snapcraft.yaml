@@ -1,4 +1,4 @@
-name: printing-stack-snap
+name: cups
 base: core18 # The base snap is the execution environment for this snap
 version: 0.1.0
 summary: CUPS-based printing stack snap
@@ -136,7 +136,7 @@ parts:
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-fix-load-cupsd.conf.patch
         sed -i 's|setgroups(1, &Group)|setgroups(0, NULL)|g' scheduler/process.c
         sed -i 's|setgroups(1, &gid)|setgroups(0, NULL)|g' scheduler/cups-exec.c
-        sed -i 's|"\$sysconfdir/cups")|"/var/snap/printing-stack-snap/common/etc/cups")|g' config-scripts/cups-directories.m4
+        sed -i 's|"\$sysconfdir/cups")|"/var/snap/cups/common/etc/cups")|g' config-scripts/cups-directories.m4
         rm configure
         autoconf
         snapcraftctl build
@@ -234,11 +234,11 @@ parts:
         - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
         - --enable-cups
         - --enable-freetype
-        - --datarootdir=/snap/printing-stack-snap/current/share/
-        - --with-fontpath=/snap/printing-stack-snap/current/share/cups/fonts
-        - --with-cups-serverbin=/snap/printing-stack-snap/current/lib/cups
-        - --with-cups-serverroot=/var/snap/printing-stack-snap/common/etc/cups
-        - --with-cups-datadir=/snap/printing-stack-snap/current/share/cups
+        - --datarootdir=/snap/cups/current/share/
+        - --with-fontpath=/snap/cups/current/share/cups/fonts
+        - --with-cups-serverbin=/snap/cups/current/lib/cups
+        - --with-cups-serverroot=/var/snap/cups/common/etc/cups
+        - --with-cups-datadir=/snap/cups/current/share/cups
     stage-packages:
         - libpaper1
         - libfontconfig1
@@ -256,9 +256,9 @@ parts:
         - -usr/share/doc
         - -usr/share/doc-base
         - -usr/share/lintian
-        - -snap/printing-stack-snap
+        - -snap/cups
     organize:
-      snap/printing-stack-snap/current/share: share
+      snap/cups/current/share: share
     after: [cups]
   cups-filters:
     source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.5.tar.xz
@@ -266,7 +266,7 @@ parts:
     configflags:
         - --disable-mutool
         - --without-rcdir
-        - --with-pdftops-path=/snap/printing-stack-snap/current/usr/bin/pdftops
+        - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
     build-packages:
         - autoconf
         - autotools-dev
