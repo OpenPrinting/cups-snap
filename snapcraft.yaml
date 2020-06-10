@@ -264,6 +264,7 @@ parts:
     configflags:
         - --disable-mutool
         - --without-rcdir
+        - --with-pdftops-path=/snap/printing-stack-snap/current/usr/bin/pdftops
     build-packages:
         - autoconf
         - autotools-dev
