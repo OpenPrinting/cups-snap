@@ -328,6 +328,7 @@ parts:
     stage-packages:
         - fonts-freefont-ttf
         - fonts-arphic-uming
+        - fontconfig-config
     organize:
       usr/share/fonts/truetype/freefont/: share/cups/fonts/
       usr/share/fonts/truetype/arphic/: share/cups/fonts/
