@@ -115,7 +115,7 @@ apps:
     plugs: [home, system-config]
 
 parts:
-  cups-patches:
+  patches:
     plugin: dump
     source: patches
     organize:
@@ -202,7 +202,7 @@ parts:
         - -usr/share/doc
         - -usr/share/doc-base
         - -usr/share/lintian
-    after: [cups-patches]
+    after: [patches]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.0.1/qpdf-10.0.1.tar.gz
     plugin: autotools
@@ -228,6 +228,11 @@ parts:
   ghostscript:
     source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs952/ghostscript-9.52.tar.gz
     plugin: autotools
+    override-build: |
+        set -eux
+        patch -p1 < $SNAPCRAFT_STAGE/patches/ghostscript-disable-ppc-optimisations-in-libpng.patch
+        ./autogen.sh
+        snapcraftctl build
     configflags:
         - --without-x
         - --disable-gtk
@@ -259,7 +264,7 @@ parts:
         - -snap/cups
     organize:
       snap/cups/current/share: share
-    after: [cups]
+    after: [patches, cups]
   cups-filters:
     source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.5.tar.xz
     plugin: autotools

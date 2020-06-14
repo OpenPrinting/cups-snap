@@ -1,0 +1,45 @@
+From: Chris Liddell <chris.liddell@artifex.com>
+Date: Tue, 24 Mar 2020 15:19:23 +0000 (+0000)
+Subject: Disable PPC optimisations in libpng
+X-Git-Tag: ghostpdl-9.52-test-base-1~2
+X-Git-Url: http://git.ghostscript.com/?p=ghostpdl.git;a=commitdiff_plain;h=1c9bd8e0aa4
+
+Disable PPC optimisations in libpng
+
+Since we don't include the libpng source file with the PowerPC optimizations
+in our build, and it only applies to reading, which we don't rely on, just
+disable calling the optimizations.
+
+Cures a linker error on PowerPCle platforms
+---
+
+diff --git a/configure.ac b/configure.ac
+index 638c56641..5be1eac6a 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1252,7 +1252,24 @@ else
+           SHARE_LIBPNG=0
+           LIBPNGDIR=$srcdir/libpng
+           PNGDEVS="$PNGDEVS_ALL"
+-  else
++          case $host in
++            *powerpc*)
++                # Building on PPC with gcc, disable libpng's PPC specific
++                # optimizations: we don't include the source file for it
++                # and it only applies to reading, which we don't use.
++                if test $GCC = yes; then
++                  CFLAGS="$CFLAGS -DPNG_POWERPC_VSX_OPT=0"
++                fi
++            ;;
++            *arm64*|*aarch64*)
++                # Building on arm64 with gcc, disable libpng's neon
++                # optimizations.
++                if test $GCC = yes; then
++                  CFLAGS="$CFLAGS -DPNG_ARM_NEON_OPT=0"
++                fi
++            ;;
++          esac
++ else
+           AC_MSG_RESULT([no])
+           AC_CHECK_LIB(png, png_create_write_struct, [
+             AC_CHECK_HEADERS(png.h, [
