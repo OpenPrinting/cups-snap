@@ -28,6 +28,10 @@ plugs:
     write:
         - /run/cups
         - /var/run/cups
+  cups-config:
+    interface: system-files
+    read:
+        - /etc/cups
 
 apps:
   cupsd:
@@ -36,7 +40,7 @@ apps:
     reload-command: scripts/reload-cupsd
     restart-condition: always
     daemon: simple
-    plugs: [network, network-bind, avahi-control, raw-usb, system-config, cups-domain-socket]
+    plugs: [network, network-bind, avahi-control, raw-usb, system-config, cups-domain-socket, cups-config]
   cups-browsed:
     command: scripts/run-cups-browsed
     stop-command: scripts/stop-cups-browsed
