@@ -7,10 +7,19 @@ grade: devel
 confinement: strict
 
 # System user for filters and backends to drop privileges, "lp" is not
-# availabl in a Snap
+# available in a Snap
 # See https://forum.snapcraft.io/t/system-usernames/
 system-usernames:
   snap_daemon: shared
+
+environment:
+  CUPS_SERVERROOT: /var/snap/cups/common/etc/cups
+  CUPS_DATADIR: /snap/cups/current/share/cups
+  CUPS_SERVERBIN: /snap/cups/current/lib/cups
+  CUPS_FONTPATH: /snap/cups/current/share/cups/fonts
+  FONTCONFIG_FILE: /var/snap/cups/common/etc/fonts/fonts.conf
+  FONTCONFIG_PATH: /snap/cups/current/etc/fonts/conf.d
+  FONTCONFIG_SYSROOT: /snap/cups/current/etc/fonts
 
 plugs:
   system-config:
@@ -134,8 +143,9 @@ parts:
         patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-pass-on-path.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-certs-dir-root-owned-and-writable.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-certs-files-group-root-no-acls.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-extra-check-for-admin-tasks-snap-cups-control.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/cups-cupsfilter-pass-on-path-and-ld-library-path.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/libcups-fix-convert-option-choice-names-in-ppd.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-fix-load-cupsd.conf.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
