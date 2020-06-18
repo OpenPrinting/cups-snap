@@ -120,6 +120,9 @@ apps:
   ippfind:
     command: ippfind
     plugs: [network, avahi-control, system-config, cups-domain-socket]
+  driverless:
+    command: driverless
+    plugs: [network, avahi-control, system-config, cups-domain-socket]
   ippeveprinter:
     command: ippeveprinter
     plugs: [network, network-bind, avahi-control, home, raw-usb, system-config, cups-domain-socket]
