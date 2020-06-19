@@ -22,6 +22,17 @@ environment:
   FONTCONFIG_SYSROOT: /snap/cups/current/etc/fonts
 
 plugs:
+  # This is needed for the script which does the migration of the
+  # configuration and print queues of a classically installed CUPS
+  # when it is replaced by this CUPS Snap
+  etc-cups:
+    interface: system-files
+    read:
+        - /etc/cups
+  # The following two interfaces, system-config and cups-domain-socket,
+  # are temporary, they will get folded into the new cups-control
+  # interface. See
+  # https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/18172/7
   system-config:
     interface: system-files
     read:
@@ -37,10 +48,6 @@ plugs:
     write:
         - /run/cups
         - /var/run/cups
-  cups-config:
-    interface: system-files
-    read:
-        - /etc/cups
 
 apps:
   cupsd:
@@ -49,7 +56,10 @@ apps:
     reload-command: scripts/reload-cupsd
     restart-condition: always
     daemon: simple
-    plugs: [network, network-bind, avahi-control, raw-usb, system-config, cups-domain-socket, cups-config]
+    # We are plugging "snapd-control" temporarily here until we have the
+    # final method to determine whether a client process plugs "cups-control"
+    # in place
+    plugs: [network, network-bind, avahi-control, raw-usb, system-config, cups-domain-socket, etc-cups, snapd-control]
   cups-browsed:
     command: scripts/run-cups-browsed
     stop-command: scripts/stop-cups-browsed

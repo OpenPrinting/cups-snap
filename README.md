@@ -23,7 +23,7 @@ If the Snap's CUPS runs alone, the standard resources, port 631 and `(/var)/run/
 
 Note that running two CUPS instances on one system is not recommended on production systems. Disable or remove your system's CUPS if you want to use the Snap's CUPS.
 
-The Snap is currently in the Edge channel of the Snap Store and therefore can be installed via
+The Snap is currently being prepared to get put into the Edge channel of the Snap Store and there one will be able to install it via
 
 ```
 snap install --edge cups
@@ -67,6 +67,14 @@ For USB printer access you need to connect to the raw-usb interface on both clas
 ```
 sudo snap connect cups:raw-usb
 ```
+You will also need to do the following manual connections:
+```
+sudo snap connect cups:cups-control
+sudo snap connect cups:cups-domain-socket
+sudo snap connect cups:system-config
+sudo snap connect cups:snapd-control
+```
+We are working on making these manual connections not needed any more in the future.
 
 If there is already a CUPS instance running on your system, The snap's CUPS will run on port 10631 and on the /var/snap/cups/common/run/cups.sock domain socket.
 
