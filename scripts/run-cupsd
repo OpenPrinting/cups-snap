@@ -10,6 +10,7 @@ mkdir -p $SNAP_COMMON/etc/cups/ppd
 mkdir -p $SNAP_COMMON/etc/cups/ssl
 mkdir -p $SNAP_COMMON/etc/fonts/conf.d
 mkdir -p $SNAP_COMMON/run
+mkdir -m 0755 -p /run/cups
 
 # Set UTF-8
 export LC_ALL=C.UTF-8
