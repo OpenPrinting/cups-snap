@@ -244,13 +244,8 @@ parts:
         - -usr/share/lintian
         - -lib/libqpdf.a
   ghostscript:
-    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs952/ghostscript-9.52.tar.gz
+    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9533/ghostscript-9.53.3.tar.gz
     plugin: autotools
-    override-build: |
-        set -eux
-        patch -p1 < $SNAPCRAFT_STAGE/patches/ghostscript-disable-ppc-optimisations-in-libpng.patch
-        ./autogen.sh
-        snapcraftctl build
     configflags:
         - --without-x
         - --disable-gtk
@@ -284,7 +279,7 @@ parts:
       snap/cups/current/share: share
     after: [patches, cups]
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.27.5.tar.xz
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.5.tar.xz
     plugin: autotools
     configflags:
         - --disable-mutool
