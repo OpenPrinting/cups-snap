@@ -147,7 +147,7 @@ Related topics on the forum:
 
 Getting the snap into the store:
 
-* [Call for testing: OpenPrinting’s printing-stack-snap (Printing in a Snap)](https://forum.snapcraft.io/t/call-for-testing-openprintings-printing-stack-snap-printing-in-a-snap/)
+* [Call for testing: OpenPrinting’s printing-stack-snap (Printing in a Snap) (DEPRECATED)](https://forum.snapcraft.io/t/call-for-testing-openprintings-printing-stack-snap-printing-in-a-snap/)
 * [Post a snap on behalf of OpenPrinting](https://forum.snapcraft.io/t/post-a-snap-on-behalf-of-openprinting/)
 
 Printer Applications
@@ -167,4 +167,9 @@ Snapping of ippusbxd (we should snap [ipp-usb](https://github.com/OpenPrinting/i
 Requests for auto-connection to interfaces
 
 * [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
-* [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
+* [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces (DEPRECATED)](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
+
+Links on other platforms:
+
+* [Trello card about adding API to check client Snaps whether they plug a certain interface](https://trello.com/c/9IJToylf/1215-snapd-api-for-checking-client-snaps-whether-they-plug-a-given-interface)
+* [Pull Request on snapd for adding the client Snap checking API (waiting for approval by security team)](https://github.com/snapcore/snapd/pull/9132)
