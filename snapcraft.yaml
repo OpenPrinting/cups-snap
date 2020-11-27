@@ -137,7 +137,7 @@ parts:
       '*' : patches/
     override-prime: ""
   cups:
-    source: https://github.com/apple/cups/releases/download/v2.3.3/cups-2.3.3-source.tar.gz
+    source: https://github.com/OpenPrinting/cups/releases/download/v2.3.3op1/cups-2.3.3op1-source.tar.gz
     plugin: autotools
     override-build: |
         set -eux
@@ -148,10 +148,7 @@ parts:
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-extra-check-for-admin-tasks-snap-cups-control.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-cupsfilter-pass-on-path-and-ld-library-path.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/libcups-fix-convert-option-choice-names-in-ppd.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-fix-load-cupsd.conf.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/libcups-resolve-dnssd-uri-from-localhost.patch
         sed -i 's|setgroups(1, &Group)|setgroups(0, NULL)|g' scheduler/process.c
         sed -i 's|setgroups(1, &gid)|setgroups(0, NULL)|g' scheduler/cups-exec.c
         sed -i 's|"\$sysconfdir/cups")|"/var/snap/cups/common/etc/cups")|g' config-scripts/cups-directories.m4
