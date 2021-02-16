@@ -23,7 +23,7 @@ If the Snap's CUPS runs alone, the standard resources, port 631 and `(/var)/run/
 
 Note that running two CUPS instances on one system is not recommended on production systems. Disable or remove your system's CUPS if you want to use the Snap's CUPS.
 
-The Snap is currently being prepared to get put into the Edge channel of the Snap Store and there one will be able to install it via
+The Snap is available in the Edge channel of the Snap Store and from there one can install it via
 
 ```
 snap install --edge cups
@@ -49,34 +49,15 @@ sudo snap install --dangerous <file>.snap
 
 with `<file>.snap` being the name of the snap file.
 
-You also need to manually connect the snap to the Avahi interface. On classic systems run:
+You also need to manually connect some interfaces:
 ```
-sudo snap connect cups:avahi-control
+sudo snap connect cups:cups-control cups:admin
+sudo snap connect cups:network-manager-observe
 ```
-On snap-based systems install the Avahi snap at first
-```
-sudo snap install avahi
-```
-and connect to the avahi snap:
-```
-sudo snap connect cups:avahi-control avahi
-```
-This allows sharing of printers between your system's CUPS and the snap's CUPS. cups-browsed (one instance on the system, one in the snap) automatically creates appropriate queues.
 
-For USB printer access you need to connect to the raw-usb interface on both classic and snap-based systems:
-```
-sudo snap connect cups:raw-usb
-```
-You will also need to do the following manual connections:
-```
-sudo snap connect cups:cups-control
-sudo snap connect cups:cups-domain-socket
-sudo snap connect cups:system-config
-sudo snap connect cups:snapd-control
-```
-We are working on making these manual connections not needed any more in the future.
+The former is for the snapped CUPS accepting administrative tasks (create/manipulate print queues, delete somebody else's jobs, ...) of the tools coming with the very same Snap.
 
-If there is already a CUPS instance running on your system, The snap's CUPS will run on port 10631 and on the /var/snap/cups/common/run/cups.sock domain socket.
+If there is already a CUPS instance running on your system, the snap's CUPS will run on port 10631 and on the /var/snap/cups/common/run/cups.sock domain socket.
 
 To use use the snap's command line utilities acting on the snap's CUPS, preceed the commands with `cups.`:
 ```
@@ -115,7 +96,8 @@ lpstat -h /var/snap/cups/common/run/cups.sock -v
 
 ## What is planned/still missing?
 
-* Auto-connect to all interfaces (avahi, raw-usb, home, system-files).
+* Auto-connect to all interfaces (cups-control, network-manager-observe)
+* Spin out cups-browsed into a separate Snap
 
 
 ## Change on design goals: Printer drivers deprecated -> Printer Applications
@@ -126,7 +108,15 @@ Therefore we will not add a printer driver interface as it is not needed any mor
 
 Note that this Snap DOES NOT support classic printer drivers!
 
+If you have a PostScript Printer, do
+
+```
+snap install --edge ps-printer-app
+```
+to get your first Printer Application, the [PostScript Printer Application](https://github.com/OpenPrinting/ps-printer-app).
+
 See "Printer Applications" below.
+
 
 ## Discussion
 
@@ -152,13 +142,14 @@ Getting the snap into the store:
 
 Printer Applications
 
+* [PostScript Printer Application](https://github.com/OpenPrinting/ps-printer-app)
+* [PAPPL](https://github.com/michaelrsweet/pappl/)
 * [Printer Applications (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/printer-applications-may-2020.pdf)
 * [CUPS 2018 (PDF, pages 28-29)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-may-18.pdf)
 * [CUPS 2019 (PDF, pages 30-35)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-april-19.pdf)
 * [cups-filters 2018 (PDF, page 11)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2018.pdf)
 * [cups-filters 2019 (PDF, pages 16-17)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2019.pdf)
 * [cups-filters 2020 (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2020.pdf)
-* [PAPPL](https://github.com/michaelrsweet/pappl/)
 
 Snapping of ippusbxd (we should snap [ipp-usb](https://github.com/OpenPrinting/ipp-usb) instead)
 
@@ -166,6 +157,7 @@ Snapping of ippusbxd (we should snap [ipp-usb](https://github.com/OpenPrinting/i
 
 Requests for auto-connection to interfaces
 
+* [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:admin and also of the network-manager-observe interface](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
 * [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
 * [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces (DEPRECATED)](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
 
