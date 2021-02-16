@@ -44,10 +44,7 @@ apps:
     reload-command: scripts/reload-cupsd
     restart-condition: always
     daemon: simple
-    # We are plugging "snapd-control" temporarily here until we have the
-    # final method to determine whether a client process plugs "cups-control"
-    # in place
-    plugs: [network, network-bind, avahi-control, raw-usb, etc-cups, mount-observe, snapd-control]
+    plugs: [network, network-bind, avahi-control, raw-usb, etc-cups]
     slots: [admin, printing]
   cups-browsed:
     command: scripts/run-cups-browsed
@@ -161,6 +158,7 @@ parts:
         - --disable-systemd
         - --without-rcdir
         - --with-docdir=/share/cups/doc
+        - --enable-snapped-cupsd
         #- --enable-debug-printfs
     build-packages:
         - patch
