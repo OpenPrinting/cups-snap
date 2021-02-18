@@ -55,73 +55,73 @@ apps:
     plugs: [network, network-bind, network-manager-observe, avahi-control, cups-control]
   lpinfo:
     command: lpinfo
-    plugs: [network, avahi-control, raw-usb, cups-control]
+    plugs: [network, avahi-control, raw-usb, cups]
   lpadmin:
     command: lpadmin
     plugs: [network, avahi-control, home, cups-control]
   lpstat:
     command: lpstat
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, avahi-control, cups]
   lpq:
     command: lpq
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups]
   lpc:
     command: lpc
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups]
   lpoptions:
     command: lpoptions
-    plugs: [network, avahi-control, home, cups-control]
+    plugs: [network, home, cups]
   lp:
     command: lp
-    plugs: [network, avahi-control, home, cups-control]
+    plugs: [network, home, cups]
   lpr:
     command: lpr
-    plugs: [network, avahi-control, home, cups-control]
+    plugs: [network, home, cups]
   cancel:
     command: cancel
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   lprm:
     command: lprm
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   cupsenable:
     command: cupsenable
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   cupsdisable:
     command: cupsdisable
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   cupsaccept:
     command: cupsaccept
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   cupsreject:
     command: cupsreject
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   accept:
     command: cupsaccept
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   reject:
     command: cupsreject
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   cupsctl:
     command: cupsctl
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, cups-control]
   cupsfilter:
     command: cupsfilter
-    plugs: [network, avahi-control, home, cups-control]
+    plugs: [network, home, cups]
   cupstestppd:
     command: cupstestppd
-    plugs: [network, avahi-control, home, cups-control]
+    plugs: [network, home, cups]
   ipptool:
     command: ipptool
     plugs: [network, avahi-control, home, cups-control]
   ippfind:
     command: ippfind
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, avahi-control, cups]
   driverless:
     command: driverless
-    plugs: [network, avahi-control, cups-control]
+    plugs: [network, avahi-control, cups]
   ippeveprinter:
     command: ippeveprinter
-    plugs: [network, network-bind, avahi-control, home, raw-usb, cups-control]
+    plugs: [network, network-bind, avahi-control, home, raw-usb, cups]
   gs:
     command: gs
     plugs: [home, etc-cups]

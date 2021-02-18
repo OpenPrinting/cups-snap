@@ -51,11 +51,13 @@ with `<file>.snap` being the name of the snap file.
 
 You also need to manually connect some interfaces:
 ```
+sudo snap connect cups:cups cups:printing
 sudo snap connect cups:cups-control cups:admin
 sudo snap connect cups:network-manager-observe
 ```
+The first is for the snapped CUPS accepting printing and status check tasks of the tools coming with the very same Snap, the second is for the snapped CUPS accepting administrative tasks (create/manipulate print queues, delete somebody else's jobs, ...).
 
-The former is for the snapped CUPS accepting administrative tasks (create/manipulate print queues, delete somebody else's jobs, ...) of the tools coming with the very same Snap.
+The third one is for cups-browsed to receive notifications from Network Manager about changes in the local network configuration.
 
 If there is already a CUPS instance running on your system, the snap's CUPS will run on port 10631 and on the /var/snap/cups/common/run/cups.sock domain socket.
 
