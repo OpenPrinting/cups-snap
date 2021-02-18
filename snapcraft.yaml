@@ -134,7 +134,7 @@ parts:
       '*' : patches/
     override-prime: ""
   cups:
-    source: https://github.com/OpenPrinting/cups/releases/download/v2.3.3op1/cups-2.3.3op1-source.tar.gz
+    source: https://github.com/OpenPrinting/cups/releases/download/v2.3.3op2/cups-2.3.3op2-source.tar.gz
     plugin: autotools
     override-build: |
         set -eux
@@ -217,7 +217,7 @@ parts:
         - -usr/share/lintian
     after: [patches]
   qpdf:
-    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.0.1/qpdf-10.0.1.tar.gz
+    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.1.0/qpdf-10.1.0.tar.gz
     plugin: autotools
     build-packages:
         - g++
@@ -274,7 +274,7 @@ parts:
       snap/cups/current/share: share
     after: [patches, cups]
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.5.tar.xz
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.7.tar.xz
     plugin: autotools
     configflags:
         - --disable-mutool
