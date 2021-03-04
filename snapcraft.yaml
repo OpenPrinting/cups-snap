@@ -133,17 +133,37 @@ parts:
     organize:
       '*' : patches/
     override-prime: ""
+  snapd-glib:
+    source: https://github.com/snapcore/snapd-glib
+    source-type: git
+    plugin: meson
+    meson-parameters:
+      - -Dprefix=/
+      - -Dbuildtype=plain
+      - -Dintrospection=false
+      - -Ddocs=false
+      - -Dvala-bindings=false
+      - -Dqt-bindings=false
+      - -Dqml-bindings=false
+    build-packages:
+      - libglib2.0-dev
+      - libjson-glib-dev
+      - libsoup2.4-dev
+    stage-packages:
+      - libicu60
+      - libjson-glib-1.0-0
+      - libsoup2.4-1
+      - libxml2
+    prime:
+      - -include
+      - -libexec
+      - -share
   cups:
     source: https://github.com/OpenPrinting/cups/releases/download/v2.3.3op2/cups-2.3.3op2-source.tar.gz
     plugin: autotools
     override-build: |
         set -eux
-        patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-pass-on-ld-library-path.patch
-        patch -p0 < $SNAPCRAFT_STAGE/patches/cupsd-pass-on-path.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-certs-dir-root-owned-and-writable.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-certs-files-group-root-no-acls.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-extra-check-for-admin-tasks-snap-cups-control.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cups-cupsfilter-pass-on-path-and-ld-library-path.patch
+        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-cupsfilter-snap-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
         sed -i 's|setgroups(1, &Group)|setgroups(0, NULL)|g' scheduler/process.c
@@ -193,16 +213,10 @@ parts:
         - zlib1g-dev
         - wget
         - libapparmor-dev
-        - libsnapd-glib-dev
     stage-packages:
         - libusb-1.0-0
         - libavahi-common3
         - libavahi-client3
-        - libicu60
-        - libjson-glib-1.0-0
-        - libsnapd-glib1
-        - libsoup2.4-1
-        - libxml2
     prime:
         - -etc/fonts
         - -var
@@ -215,7 +229,7 @@ parts:
         - -usr/share/doc
         - -usr/share/doc-base
         - -usr/share/lintian
-    after: [patches]
+    after: [patches, snapd-glib]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.2.0/qpdf-10.2.0.tar.gz
     plugin: autotools
@@ -272,7 +286,7 @@ parts:
         - -snap/cups
     organize:
       snap/cups/current/share: share
-    after: [patches, cups]
+    after: [cups]
   cups-filters:
     source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.7.tar.xz
     plugin: autotools
