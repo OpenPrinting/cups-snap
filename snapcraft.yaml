@@ -166,8 +166,6 @@ parts:
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-cupsfilter-snap-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
-        sed -i 's|setgroups(1, &Group)|setgroups(0, NULL)|g' scheduler/process.c
-        sed -i 's|setgroups(1, &gid)|setgroups(0, NULL)|g' scheduler/cups-exec.c
         sed -i 's|"\$sysconfdir/cups")|"/var/snap/cups/common/etc/cups")|g' config-scripts/cups-directories.m4
         rm configure
         autoconf

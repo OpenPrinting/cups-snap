@@ -889,6 +889,21 @@ diff -uraN cups-2.3.3op2.orig/scheduler/conf.c cups-2.3.3op2/scheduler/conf.c
         cupsdCheckPermissions(ServerRoot, NULL, 0755, RunUser,
  			     Group, 1, 0) < 0 ||
         cupsdCheckPermissions(ServerRoot, "ppd", 0755, RunUser,
+diff -uraN cups-2.3.3op2.orig/scheduler/cups-exec.c cups-2.3.3op2/scheduler/cups-exec.c
+--- cups-2.3.3op2.orig/scheduler/cups-exec.c	2021-03-04 14:31:42.097440563 +0100
++++ cups-2.3.3op2/scheduler/cups-exec.c	2021-03-04 17:34:12.037495233 +0100
+@@ -129,7 +129,11 @@
+     if (setgid(gid))
+       exit(errno + 100);
+ 
++#  ifdef SUPPORT_SNAPPED_CUPSD
++    if (setgroups(0, NULL))
++#  else
+     if (setgroups(1, &gid))
++#  endif /* SUPPORT_SNAPPED_CUPSD */
+       exit(errno + 100);
+ 
+     if (uid && setuid(uid))
 diff -uraN cups-2.3.3op2.orig/scheduler/cupsfilter.c cups-2.3.3op2/scheduler/cupsfilter.c
 --- cups-2.3.3op2.orig/scheduler/cupsfilter.c	2021-03-04 14:31:42.097440563 +0100
 +++ cups-2.3.3op2/scheduler/cupsfilter.c	2021-03-04 14:32:11.273553276 +0100
@@ -1065,3 +1080,18 @@ diff -uraN cups-2.3.3op2.orig/scheduler/Makefile cups-2.3.3op2/scheduler/Makefil
  	$(CODE_SIGN) -s "$(CODE_SIGN_IDENTITY)" $@
  
  
+diff -uraN cups-2.3.3op2.orig/scheduler/process.c cups-2.3.3op2/scheduler/process.c
+--- cups-2.3.3op2.orig/scheduler/process.c	2021-03-04 14:31:42.097440563 +0100
++++ cups-2.3.3op2/scheduler/process.c	2021-03-04 17:34:12.037495233 +0100
+@@ -744,7 +744,11 @@
+     if (!RunUser && setgid(Group))
+       exit(errno + 100);
+ 
++#  ifdef SUPPORT_SNAPPED_CUPSD
++    if (!RunUser && setgroups(0, NULL))
++#  else
+     if (!RunUser && setgroups(1, &Group))
++#  endif /* SUPPORT_SNAPPED_CUPSD */
+       exit(errno + 100);
+ 
+    /*
