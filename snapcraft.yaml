@@ -28,7 +28,7 @@ plugs:
   etc-cups:
     interface: system-files
     read:
-        - /etc/cups
+      - /etc/cups
 
 slots:
   # Provide the cups-control and cups slots for other snaps to connect to
@@ -162,128 +162,128 @@ parts:
     source: https://github.com/OpenPrinting/cups/releases/download/v2.3.3op2/cups-2.3.3op2-source.tar.gz
     plugin: autotools
     override-build: |
-        set -eux
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-cupsfilter-snap-support.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
-        patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
-        rm configure
-        autoconf
-        snapcraftctl build
+      set -eux
+      patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-cupsfilter-snap-support.patch
+      patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
+      patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
+      rm configure
+      autoconf
+      snapcraftctl build
     configflags:
-        - --sysconfdir=/var/snap/cups/common/etc
-        - --with-system-groups=root
-        - --disable-pam
-        - --disable-systemd
-        - --without-rcdir
-        - --with-docdir=/share/cups/doc
-        - --enable-snapped-cupsd
-        #- --enable-debug-printfs
+      - --sysconfdir=/var/snap/cups/common/etc
+      - --with-system-groups=root
+      - --disable-pam
+      - --disable-systemd
+      - --without-rcdir
+      - --with-docdir=/share/cups/doc
+      - --enable-snapped-cupsd
+      #- --enable-debug-printfs
     build-packages:
-        - patch
-        - autoconf
-        - automake
-        - libtool
-        - autotools-dev
-        - pkg-config
-        - g++
-        - ghostscript
-        - libavahi-client-dev
-        - libavahi-common-dev
-        - libavahi-compat-libdnssd-dev
-        - libdbus-1-dev
-        - libfontconfig1-dev
-        - libfreetype6-dev
-        - libgnutls28-dev
-        - libijs-dev
-        - libjpeg-dev
-        - libldap2-dev
-        - libkrb5-dev
-        - libpam0g-dev
-        - libpaper-dev
-        - libpng-dev
-        - libsystemd-dev
-        - libtiff5-dev
-        - libusb-1.0-0-dev
-        - po4a
-        - po-debconf
-        - poppler-utils
-        - sharutils
-        - zlib1g-dev
-        - wget
-        - libapparmor-dev
+      - patch
+      - autoconf
+      - automake
+      - libtool
+      - autotools-dev
+      - pkg-config
+      - g++
+      - ghostscript
+      - libavahi-client-dev
+      - libavahi-common-dev
+      - libavahi-compat-libdnssd-dev
+      - libdbus-1-dev
+      - libfontconfig1-dev
+      - libfreetype6-dev
+      - libgnutls28-dev
+      - libijs-dev
+      - libjpeg-dev
+      - libldap2-dev
+      - libkrb5-dev
+      - libpam0g-dev
+      - libpaper-dev
+      - libpng-dev
+      - libsystemd-dev
+      - libtiff5-dev
+      - libusb-1.0-0-dev
+      - po4a
+      - po-debconf
+      - poppler-utils
+      - sharutils
+      - zlib1g-dev
+      - wget
+      - libapparmor-dev
     stage-packages:
-        - libusb-1.0-0
-        - libavahi-common3
-        - libavahi-client3
+      - libusb-1.0-0
+      - libavahi-common3
+      - libavahi-client3
     organize:
-        var/snap/cups/common/etc: etc
+      var/snap/cups/common/etc: etc
     prime:
-        - -etc/fonts
-        - -var
-        - -include
-        - -share/man
-        - -share/doc
-        - -share/lintian
-        - -usr/share/fonts
-        - -usr/share/man
-        - -usr/share/doc
-        - -usr/share/doc-base
-        - -usr/share/lintian
+      - -etc/fonts
+      - -var
+      - -include
+      - -share/man
+      - -share/doc
+      - -share/lintian
+      - -usr/share/fonts
+      - -usr/share/man
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/lintian
     after: [patches, snapd-glib]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.2.0/qpdf-10.2.0.tar.gz
     plugin: autotools
     build-packages:
-        - g++
-        - libjpeg-dev
-        - zlib1g-dev
+      - g++
+      - libjpeg-dev
+      - zlib1g-dev
     stage-packages:
-        - libjpeg-turbo8
+      - libjpeg-turbo8
     prime:
-        - -etc/fonts
-        - -var
-        - -include
-        - -share/man
-        - -share/doc
-        - -share/lintian
-        - -usr/share/fonts
-        - -usr/share/man
-        - -usr/share/doc
-        - -usr/share/doc-base
-        - -usr/share/lintian
-        - -lib/libqpdf.a
+      - -etc/fonts
+      - -var
+      - -include
+      - -share/man
+      - -share/doc
+      - -share/lintian
+      - -usr/share/fonts
+      - -usr/share/man
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/lintian
+      - -lib/libqpdf.a
   ghostscript:
     source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9533/ghostscript-9.53.3.tar.gz
     plugin: autotools
     configflags:
-        - --without-x
-        - --disable-gtk
-        - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
-        - --enable-cups
-        - --enable-freetype
-        - --datarootdir=/snap/cups/current/share/
-        - --with-fontpath=/snap/cups/current/share/cups/fonts
-        - --with-cups-serverbin=/snap/cups/current/lib/cups
-        - --with-cups-serverroot=/var/snap/cups/common/etc/cups
-        - --with-cups-datadir=/snap/cups/current/share/cups
+      - --without-x
+      - --disable-gtk
+      - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
+      - --enable-cups
+      - --enable-freetype
+      - --datarootdir=/snap/cups/current/share/
+      - --with-fontpath=/snap/cups/current/share/cups/fonts
+      - --with-cups-serverbin=/snap/cups/current/lib/cups
+      - --with-cups-serverroot=/var/snap/cups/common/etc/cups
+      - --with-cups-datadir=/snap/cups/current/share/cups
     stage-packages:
-        - libpaper1
-        - libfontconfig1
-        - libfreetype6
-        - libpng16-16
+      - libpaper1
+      - libfontconfig1
+      - libfreetype6
+      - libpng16-16
     prime:
-        - -etc/fonts
-        - -var
-        - -include
-        - -share/man
-        - -share/doc
-        - -share/lintian
-        - -usr/share/fonts
-        - -usr/share/man
-        - -usr/share/doc
-        - -usr/share/doc-base
-        - -usr/share/lintian
-        - -snap/cups
+      - -etc/fonts
+      - -var
+      - -include
+      - -share/man
+      - -share/doc
+      - -share/lintian
+      - -usr/share/fonts
+      - -usr/share/man
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/lintian
+      - -snap/cups
     organize:
       snap/cups/current/share: share
     after: [cups]
@@ -291,108 +291,108 @@ parts:
     source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.7.tar.xz
     plugin: autotools
     configflags:
-        - --disable-mutool
-        - --without-rcdir
-        - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
+      - --disable-mutool
+      - --without-rcdir
+      - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
     build-packages:
-        - autoconf
-        - autotools-dev
-        - pkg-config
-        - g++
-        - sharutils
-        - poppler-utils
-        - libglib2.0-dev
-        - liblcms2-dev
-        - libldap2-dev
-        - libpoppler-private-dev
-        - libpoppler-cpp-dev
-        - libjpeg-dev
-        - libpng-dev
-        - libtiff5-dev
-        - libijs-dev
-        - zlib1g-dev
-        - libfontconfig1-dev
-        - libdbus-1-dev
-        - libavahi-common-dev
-        - libavahi-client-dev
-        - libavahi-glib-dev
-        - librsvg2-bin
-        - liblouis-dev
+      - autoconf
+      - autotools-dev
+      - pkg-config
+      - g++
+      - sharutils
+      - poppler-utils
+      - libglib2.0-dev
+      - liblcms2-dev
+      - libldap2-dev
+      - libpoppler-private-dev
+      - libpoppler-cpp-dev
+      - libjpeg-dev
+      - libpng-dev
+      - libtiff5-dev
+      - libijs-dev
+      - zlib1g-dev
+      - libfontconfig1-dev
+      - libdbus-1-dev
+      - libavahi-common-dev
+      - libavahi-client-dev
+      - libavahi-glib-dev
+      - librsvg2-bin
+      - liblouis-dev
     stage-packages:
-        - poppler-utils
-        - libpoppler-cpp0v5
-        - libasn1-8-heimdal
-        - libavahi-glib1
-        - libgssapi3-heimdal
-        - libhcrypto4-heimdal
-        - libheimbase1-heimdal
-        - libheimntlm0-heimdal
-        - libhx509-5-heimdal
-        - libkrb5-26-heimdal
-        - libldap-2.4-2
-        - libroken18-heimdal
-        - libsasl2-2
-        - libwind0-heimdal
-        - libdb5.3
+      - poppler-utils
+      - libpoppler-cpp0v5
+      - libasn1-8-heimdal
+      - libavahi-glib1
+      - libgssapi3-heimdal
+      - libhcrypto4-heimdal
+      - libheimbase1-heimdal
+      - libheimntlm0-heimdal
+      - libhx509-5-heimdal
+      - libkrb5-26-heimdal
+      - libldap-2.4-2
+      - libroken18-heimdal
+      - libsasl2-2
+      - libwind0-heimdal
+      - libdb5.3
     prime:
-        - -etc/fonts
-        - -var
-        - -include
-        - -share/man
-        - -share/doc
-        - -share/lintian
-        - -usr/share/fonts
-        - -usr/share/man
-        - -usr/share/doc
-        - -usr/share/doc-base
-        - -usr/share/lintian
-        - -lib/libcupsfilters.a
-        - -lib/libfontembed.a
+      - -etc/fonts
+      - -var
+      - -include
+      - -share/man
+      - -share/doc
+      - -share/lintian
+      - -usr/share/fonts
+      - -usr/share/man
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/lintian
+      - -lib/libcupsfilters.a
+      - -lib/libfontembed.a
     after: [cups, qpdf, ghostscript]
   selected-fonts: # Temporary, fonts should come from the system
     plugin: nil
     source: .
     stage-packages:
-        - fonts-freefont-ttf
-        - fonts-arphic-uming
-        - fontconfig-config
+      - fonts-freefont-ttf
+      - fonts-arphic-uming
+      - fontconfig-config
     organize:
       usr/share/fonts/truetype/freefont/: share/cups/fonts/
       usr/share/fonts/truetype/arphic/: share/cups/fonts/
     prime:
-        - etc/fonts/*
-        - share/cups/fonts/*
+      - etc/fonts/*
+      - share/cups/fonts/*
   utils:
     plugin: nil
     source: .
     stage-packages:
-        - perl-base
-        - sed
-        - grep
-        - libbinutils
-        - libmpfr6
-        - libisl19
-        - libmpc3
+      - perl-base
+      - sed
+      - grep
+      - libbinutils
+      - libmpfr6
+      - libisl19
+      - libmpc3
     organize:
       usr/bin/: bin/
       usr/lib/: lib/
       usr/share/: share/
     prime:
-        - bin/
-        - lib/
-        - share/
-        - -share/gdb
-        - -share/info
-        - -share/man
-        - -share/doc
-        - -share/lintian
+      - bin/
+      - lib/
+      - share/
+      - -share/gdb
+      - -share/info
+      - -share/man
+      - -share/doc
+      - -share/lintian
   scripts:
     plugin: dump
     source: scripts/
     override-build: |
-        set -eux
-        gcc -o port-occupied port-occupied.c
-        snapcraftctl build
+      set -eux
+      gcc -o port-occupied port-occupied.c
+      snapcraftctl build
     organize:
       run-cupsd: scripts/run-cupsd
       stop-cupsd: scripts/stop-cupsd
@@ -404,5 +404,5 @@ parts:
     prime:
       - scripts/
     build-packages:
-        - gcc
+      - gcc
     after: [cups, cups-filters, selected-fonts, utils]
