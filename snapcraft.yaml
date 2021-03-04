@@ -166,11 +166,11 @@ parts:
         patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-cupsfilter-snap-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
         patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
-        sed -i 's|"\$sysconfdir/cups")|"/var/snap/cups/common/etc/cups")|g' config-scripts/cups-directories.m4
         rm configure
         autoconf
         snapcraftctl build
     configflags:
+        - --sysconfdir=/var/snap/cups/common/etc
         - --with-system-groups=root
         - --disable-pam
         - --disable-systemd
@@ -215,6 +215,8 @@ parts:
         - libusb-1.0-0
         - libavahi-common3
         - libavahi-client3
+    organize:
+        var/snap/cups/common/etc: etc
     prime:
         - -etc/fonts
         - -var
