@@ -229,6 +229,10 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
+    override-prime: |
+      set -eux
+      chmod 744 $SNAPCRAFT_STAGE/lib/cups/backend/usb
+      snapcraftctl prime
     after: [patches, snapd-glib]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.3.0/qpdf-10.3.0.tar.gz
