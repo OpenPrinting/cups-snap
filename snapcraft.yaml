@@ -55,7 +55,7 @@ apps:
     plugs: [network, network-bind, network-manager-observe, avahi-control, cups-control]
   lpinfo:
     command: sbin/lpinfo
-    plugs: [network, avahi-control, raw-usb, cups-control]
+    plugs: [network, cups-control]
   lpadmin:
     command: sbin/lpadmin
     plugs: [network, avahi-control, home, cups-control]
