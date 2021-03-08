@@ -124,7 +124,7 @@ See "Printer Applications" below.
 
 Call for testing:
 
-* [Call for testing on Snapcraft forum](the https://forum.snapcraft.io/t/call-for-testing-openprintings-cups-snap/)
+* [Call for testing on Snapcraft forum](https://forum.snapcraft.io/t/call-for-testing-openprintings-cups-snap/)
 * [Call for testing on Discourse](https://discourse.ubuntu.com/t/cups-snap-call-for-testing/)
 
 Using the CUPS Snap and developing Snaps using it:
