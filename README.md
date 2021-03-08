@@ -122,6 +122,15 @@ See "Printer Applications" below.
 
 ## Discussion
 
+Call for testing:
+
+* [Call for testing on Snapcraft forum](the https://forum.snapcraft.io/t/call-for-testing-openprintings-cups-snap/)
+* [Call for testing on Discourse](https://discourse.ubuntu.com/t/cups-snap-call-for-testing/)
+
+Using the CUPS Snap and developing Snaps using it:
+
+* [Printing and managing printers from your Snap](https://forum.snapcraft.io/t/printing-and-managing-printers-from-your-snap/)
+
 The development of this snap is discussed on the Snapcraft forum:
 
 * [General development](https://forum.snapcraft.io/t/snapping-cups-printing-stack-avahi-support-system-users-groups/)
@@ -159,11 +168,12 @@ Snapping of ippusbxd (we should snap [ipp-usb](https://github.com/OpenPrinting/i
 
 Requests for auto-connection to interfaces
 
-* [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:admin and also of the network-manager-observe interface](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
-* [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
+* [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:admin and also of the network-manager-observe interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
+* [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
 * [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces (DEPRECATED)](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
 
 Links on other platforms:
 
 * [Trello card about adding API to check client Snaps whether they plug a certain interface](https://trello.com/c/9IJToylf/1215-snapd-api-for-checking-client-snaps-whether-they-plug-a-given-interface)
-* [Pull Request on snapd for adding the client Snap checking API (waiting for approval by security team)](https://github.com/snapcore/snapd/pull/9132)
+* [Pull Request on snapd for adding the client Snap checking API (merged)](https://github.com/snapcore/snapd/pull/9132)
+* [Pull request on snapd-glib for adding support for exit codes returned by snapctl commands issued via library function (merged)](https://github.com/snapcore/snapd-glib/pull/97)
