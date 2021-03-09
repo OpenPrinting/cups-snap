@@ -51,8 +51,7 @@ with `<file>.snap` being the name of the snap file.
 
 You also need to manually connect some interfaces:
 ```
-sudo snap connect cups:cups cups:printing
-sudo snap connect cups:cups-control cups:admin
+sudo snap connect cups:cups-internal cups:cups-control
 sudo snap connect cups:network-manager-observe
 ```
 The first is for the snapped CUPS accepting printing and status check tasks of the tools coming with the very same Snap, the second is for the snapped CUPS accepting administrative tasks (create/manipulate print queues, delete somebody else's jobs, ...).
@@ -168,7 +167,7 @@ Snapping of ippusbxd (we should snap [ipp-usb](https://github.com/OpenPrinting/i
 
 Requests for auto-connection to interfaces
 
-* [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:admin and also of the network-manager-observe interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
+* [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:cups-control and also of the network-manager-observe interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
 * [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
 * [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces (DEPRECATED)](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
 
