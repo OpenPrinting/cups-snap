@@ -29,12 +29,14 @@ plugs:
     interface: system-files
     read:
       - /etc/cups
+  cups-internal:
+    interface: cups-control
 
 slots:
   # Provide the cups-control and cups slots for other snaps to connect to
-  admin:
+  cups-control:
     interface: cups-control
-  printing:
+  cups:
     interface: cups
 
 apps:
@@ -45,83 +47,83 @@ apps:
     restart-condition: always
     daemon: simple
     plugs: [network, network-bind, avahi-control, raw-usb, etc-cups]
-    slots: [admin, printing]
+    slots: [cups-control, cups]
   cups-browsed:
     command: scripts/run-cups-browsed
     stop-command: scripts/stop-cups-browsed
     reload-command: scripts/reload-cups-browsed
     restart-condition: always
     daemon: simple
-    plugs: [network, network-bind, network-manager-observe, avahi-control, cups-control]
+    plugs: [network, network-bind, network-manager-observe, avahi-control, cups-internal]
   lpinfo:
     command: sbin/lpinfo
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   lpadmin:
     command: sbin/lpadmin
-    plugs: [network, avahi-control, home, cups-control]
+    plugs: [network, avahi-control, home, cups-internal]
   lpstat:
     command: bin/lpstat
-    plugs: [network, avahi-control, cups]
+    plugs: [network, avahi-control, cups-internal]
   lpq:
     command: bin/lpq
-    plugs: [network, cups]
+    plugs: [network, cups-internal]
   lpc:
     command: sbin/lpc
-    plugs: [network, cups]
+    plugs: [network, cups-internal]
   lpoptions:
     command: bin/lpoptions
-    plugs: [network, home, cups]
+    plugs: [network, home, cups-internal]
   lp:
     command: bin/lp
-    plugs: [network, home, cups]
+    plugs: [network, home, cups-internal]
   lpr:
     command: bin/lpr
-    plugs: [network, home, cups]
+    plugs: [network, home, cups-internal]
   cancel:
     command: bin/cancel
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   lprm:
     command: bin/lprm
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   cupsenable:
     command: sbin/cupsenable
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   cupsdisable:
     command: sbin/cupsdisable
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   cupsaccept:
     command: sbin/cupsaccept
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   cupsreject:
     command: sbin/cupsreject
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   accept:
     command: sbin/cupsaccept
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   reject:
     command: sbin/cupsreject
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   cupsctl:
     command: sbin/cupsctl
-    plugs: [network, cups-control]
+    plugs: [network, cups-internal]
   cupsfilter:
     command: sbin/cupsfilter
-    plugs: [network, home, cups]
+    plugs: [network, home, cups-internal]
   cupstestppd:
     command: bin/cupstestppd
-    plugs: [network, home, cups]
+    plugs: [network, home, cups-internal]
   ipptool:
     command: bin/ipptool
-    plugs: [network, avahi-control, home, cups-control]
+    plugs: [network, avahi-control, home, cups-internal]
   ippfind:
     command: bin/ippfind
-    plugs: [network, avahi-control, cups]
+    plugs: [network, avahi-control, cups-internal]
   driverless:
     command: bin/driverless
-    plugs: [network, avahi-control, cups]
+    plugs: [network, avahi-control, cups-internal]
   ippeveprinter:
     command: bin/ippeveprinter
-    plugs: [network, network-bind, avahi-control, home, raw-usb, cups]
+    plugs: [network, network-bind, avahi-control, home, raw-usb, cups-internal]
   gs:
     command: bin/gs
     plugs: [home, etc-cups]
@@ -177,6 +179,7 @@ parts:
       - --without-rcdir
       - --with-docdir=/share/cups/doc
       - --enable-snapped-cupsd
+      - --with-cups-control-slot=cups-control
       #- --enable-debug-printfs
     build-packages:
       - patch
