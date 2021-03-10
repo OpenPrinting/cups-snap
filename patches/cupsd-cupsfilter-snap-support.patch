@@ -1,7 +1,7 @@
 diff -uraN cups-2.3.3op2.orig/config.h.in cups-2.3.3op2/config.h.in
 --- cups-2.3.3op2.orig/config.h.in	2021-03-04 14:31:42.097440563 +0100
-+++ cups-2.3.3op2/config.h.in	2021-03-04 14:34:04.037989481 +0100
-@@ -661,6 +661,19 @@
++++ cups-2.3.3op2/config.h.in	2021-03-10 21:12:56.029407595 +0100
+@@ -661,6 +661,20 @@
  #undef HAVE_SYS_STATVFS_H
  #undef HAVE_SYS_VFS_H
  
@@ -14,6 +14,7 @@ diff -uraN cups-2.3.3op2.orig/config.h.in cups-2.3.3op2/config.h.in
 +#undef HAVE_SNAPDGLIB
 +#undef HAVE_SNAPD_CLIENT_RUN_SNAPCTL2_SYNC
 +#undef HAVE_SNAPCTL_IS_CONNECTED
++#undef OUR_SNAP_NAME
 +#undef SNAPCTL
 +#undef CUPS_CONTROL_SLOT
 +#undef SUPPORT_SNAPPED_CUPSD
@@ -23,8 +24,8 @@ diff -uraN cups-2.3.3op2.orig/config.h.in cups-2.3.3op2/config.h.in
   * Location of macOS localization bundle, if any.
 diff -uraN cups-2.3.3op2.orig/config-scripts/cups-snap.m4 cups-2.3.3op2/config-scripts/cups-snap.m4
 --- cups-2.3.3op2.orig/config-scripts/cups-snap.m4	1970-01-01 01:00:00.000000000 +0100
-+++ cups-2.3.3op2/config-scripts/cups-snap.m4	2021-03-04 14:34:04.037989481 +0100
-@@ -0,0 +1,100 @@
++++ cups-2.3.3op2/config-scripts/cups-snap.m4	2021-03-10 21:18:15.830824165 +0100
+@@ -0,0 +1,106 @@
 +dnl
 +dnl Support for packaging CUPS in a Snap and have it work with client Snaps.
 +dnl
@@ -39,6 +40,12 @@ diff -uraN cups-2.3.3op2.orig/config-scripts/cups-snap.m4 cups-2.3.3op2/config-s
 +
 +AC_ARG_ENABLE(snapped_cupsd, [  --enable-snapped-cupsd  enable support for packaging CUPS in a Snap])
 +AC_ARG_ENABLE(snapped_clients, [  --enable-snapped-clients enable support for CUPS controlling admin access from snapped clients])
++AC_ARG_WITH([our-snap-name], AS_HELP_STRING([--with-our-snap-name], [Set name of the Snap we are snapped in, only needed with --enable-snapped-cupsd, default=cups]), [
++    OUR_SNAP_NAME="$withval"
++], [
++    OUR_SNAP_NAME="cups"
++])
++AC_DEFINE_UNQUOTED([OUR_SNAP_NAME], ["$OUR_SNAP_NAME"], [Name of the Snap we are snapped in.])
 +AC_ARG_WITH(snapctl, [  --with-snapctl          Set path for snapctl, only needed with --enable-snapped-cupsd, default=/usr/bin/snapctl],
 +        SNAPCTL="$withval", SNAPCTL="/usr/bin/snapctl")
 +AC_DEFINE_UNQUOTED(SNAPCTL, "$SNAPCTL")
@@ -150,7 +157,7 @@ diff -uraN cups-2.3.3op2.orig/Makedefs.in cups-2.3.3op2/Makedefs.in
  LINKCUPSSTATIC	=	../cups/$(LIBCUPSSTATIC) $(LIBS)
 diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
 --- cups-2.3.3op2.orig/scheduler/auth.c	2021-03-04 14:31:42.097440563 +0100
-+++ cups-2.3.3op2/scheduler/auth.c	2021-03-05 15:36:32.241327763 +0100
++++ cups-2.3.3op2/scheduler/auth.c	2021-03-10 21:12:56.029407595 +0100
 @@ -51,6 +51,15 @@
  #  endif
  #  define CUPSD_UCRED_UID(c) (c).uid
@@ -167,7 +174,7 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
  
  
  /*
-@@ -1521,6 +1530,474 @@
+@@ -1521,6 +1530,483 @@
  
  
  /*
@@ -263,6 +270,15 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
 +	goto snap_check_done;
 +      } else
 +	cupsdLogMessage(CUPSD_LOG_DEBUG, "cupsdCheckAdminTask: AppArmor profile of client process: %s", context);
++
++#  ifdef OUR_SNAP_NAME
++      /* Is the client one of the utilities of our Snap? */
++      if (!strncmp(context, "snap." OUR_SNAP_NAME ".", strlen(OUR_SNAP_NAME) + 6))
++      {
++	cupsdLogMessage(CUPSD_LOG_DEBUG, "cupsdCheckAdminTask: Client Snap is the same Snap we are running in, access granted");
++	goto snap_check_done;
++      }
++#  endif /* OUR_SNAP_NAME */
 +
 +#  ifdef SUPPORT_SNAPPED_CUPSD
 +
@@ -642,7 +658,7 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
   * 'cupsdIsAuthorized()' - Check to see if the user is authorized...
   */
  
-@@ -1714,12 +2191,9 @@
+@@ -1714,12 +2200,9 @@
  
   /*
    * OK, got a username.  See if we need normal user access, or group
@@ -656,7 +672,7 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
   /*
    * Strip any @domain or @KDC from the username and owner...
    */
-@@ -1749,6 +2223,21 @@
+@@ -1749,6 +2232,21 @@
    else
      pw = NULL;
  
@@ -678,7 +694,7 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
    if (best->level == CUPSD_AUTH_USER)
    {
     /*
-@@ -1779,8 +2268,15 @@
+@@ -1779,8 +2277,15 @@
        {
  	if (!_cups_strncasecmp(name, "@AUTHKEY(", 9) && check_authref(con, name + 9))
  	  return (HTTP_OK);
@@ -696,7 +712,7 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
  	  return (HTTP_OK);
        }
  
-@@ -1797,9 +2293,8 @@
+@@ -1797,9 +2302,8 @@
  	return (HTTP_OK);
        else if (!_cups_strcasecmp(name, "@SYSTEM"))
        {
@@ -708,7 +724,7 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
        }
        else if (name[0] == '@')
        {
-@@ -1810,6 +2305,19 @@
+@@ -1810,6 +2314,19 @@
          return (HTTP_OK);
      }
  
@@ -728,7 +744,7 @@ diff -uraN cups-2.3.3op2.orig/scheduler/auth.c cups-2.3.3op2/scheduler/auth.c
      return (con->username[0] ? HTTP_FORBIDDEN : HTTP_UNAUTHORIZED);
    }
  
-@@ -1827,16 +2335,31 @@
+@@ -1827,16 +2344,31 @@
         name;
         name = (char *)cupsArrayNext(best->names))
    {
