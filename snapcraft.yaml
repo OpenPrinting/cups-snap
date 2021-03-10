@@ -344,6 +344,8 @@ parts:
       - libsasl2-2
       - libwind0-heimdal
       - libdb5.3
+    organize:
+      var/snap/cups/common/etc: etc
     prime:
       - -etc/fonts
       - -var
