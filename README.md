@@ -49,16 +49,18 @@ sudo snap install --dangerous <file>.snap
 
 with `<file>.snap` being the name of the snap file.
 
-You also need to manually connect some interfaces:
-```
-sudo snap connect cups:cups-internal cups:cups-control
-sudo snap connect cups:network-manager-observe
-```
-The first is for the snapped CUPS accepting printing and status check tasks of the tools coming with the very same Snap, the second is for the snapped CUPS accepting administrative tasks (create/manipulate print queues, delete somebody else's jobs, ...).
+For maximum compatibility with most snapped and unsnapped applications this Snap's CUPS will be accessible through the usual socket /run/cups/cups.sock and port 631.
 
-The third one is for cups-browsed to receive notifications from Network Manager about changes in the local network configuration.
+Only if there is already a CUPS instance running on your system (like one installed via classic Debian or RPM packages), the Snap's CUPS will run on port 10631 and on the /var/snap/cups/common/run/cups.sock domain socket.
 
-If there is already a CUPS instance running on your system, the snap's CUPS will run on port 10631 and on the /var/snap/cups/common/run/cups.sock domain socket.
+If you want to assure that the CUPS Snap will be the only CUPS running on your system and you have a systemd-based system (like Ubuntu), run
+```
+sudo systemctl stop cups-browsed
+sudo systemctl disable cups-browsed
+sudo systemctl stop cups
+sudo systemctl disable cups
+```
+before downloading and installing the CUPS Snap. The `stop` commands stop the daemons immediately, the `disable` commands exclude them from being started during boot.
 
 To use use the snap's command line utilities acting on the snap's CUPS, preceed the commands with `cups.`:
 ```
@@ -95,10 +97,20 @@ lpstat -h localhost:10631 -v
 lpstat -h /var/snap/cups/common/run/cups.sock -v
 ```
 
+For the **very rare** case that you want to do administrative tasks on your
+system's classically installed CUPS using the utilities which come with the
+CUPS Snap, you need to manually connect the utilities' "cups-internal"
+interface:
+```
+sudo snap connect cups:cups-internal cups:cups-control
+```
+
+
 ## What is planned/still missing?
 
-* Auto-connect to all interfaces (cups-control, network-manager-observe)
-* Spin out cups-browsed into a separate Snap
+- Spin out cups-browsed into a separate Snap
+- Add a script for easy migration from a classically installed CUPS to the
+  CUPS Snap
 
 
 ## Change on design goals: Printer drivers deprecated -> Printer Applications
