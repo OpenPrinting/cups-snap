@@ -29,6 +29,10 @@ plugs:
     interface: system-files
     read:
       - /etc/cups
+  # Alias name for the utilities to plug cups-control while we also have a
+  # slot named cups-control. This plug is needed especially so that the
+  # utilities included with this Snap can also do admin tasks on a CUPS
+  # daemon which is not from this Snap
   cups-internal:
     interface: cups-control
 
@@ -47,7 +51,6 @@ apps:
     restart-condition: always
     daemon: simple
     plugs: [network, network-bind, avahi-control, raw-usb, etc-cups]
-    slots: [cups-control, cups]
   cups-browsed:
     command: scripts/run-cups-browsed
     stop-command: scripts/stop-cups-browsed
