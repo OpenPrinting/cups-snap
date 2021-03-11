@@ -59,85 +59,79 @@ apps:
     daemon: simple
     plugs: [network, network-bind, network-manager-observe, avahi-control, cups-internal]
   lpinfo:
-    command: sbin/lpinfo
+    command: scripts/run-util sbin/lpinfo
     plugs: [network, cups-internal]
   lpadmin:
-    command: sbin/lpadmin
+    command: scripts/run-util sbin/lpadmin
     plugs: [network, avahi-control, home, cups-internal]
   lpstat:
-    command: bin/lpstat
+    command: scripts/run-util bin/lpstat
     plugs: [network, avahi-control, cups-internal]
   lpq:
-    command: bin/lpq
+    command: scripts/run-util bin/lpq
     plugs: [network, cups-internal]
   lpc:
-    command: sbin/lpc
+    command: scripts/run-util sbin/lpc
     plugs: [network, cups-internal]
   lpoptions:
-    command: bin/lpoptions
+    command: scripts/run-util bin/lpoptions
     plugs: [network, home, cups-internal]
   lp:
-    command: bin/lp
+    command: scripts/run-util bin/lp
     plugs: [network, home, cups-internal]
   lpr:
-    command: bin/lpr
+    command: scripts/run-util bin/lpr
     plugs: [network, home, cups-internal]
   cancel:
-    command: bin/cancel
+    command: scripts/run-util bin/cancel
     plugs: [network, cups-internal]
   lprm:
-    command: bin/lprm
+    command: scripts/run-util bin/lprm
     plugs: [network, cups-internal]
   cupsenable:
-    command: sbin/cupsenable
+    command: scripts/run-util sbin/cupsenable
     plugs: [network, cups-internal]
   cupsdisable:
-    command: sbin/cupsdisable
+    command: scripts/run-util sbin/cupsdisable
     plugs: [network, cups-internal]
   cupsaccept:
-    command: sbin/cupsaccept
+    command: scripts/run-util sbin/cupsaccept
     plugs: [network, cups-internal]
   cupsreject:
-    command: sbin/cupsreject
+    command: scripts/run-util sbin/cupsreject
     plugs: [network, cups-internal]
   accept:
-    command: sbin/cupsaccept
+    command: scripts/run-util sbin/cupsaccept
     plugs: [network, cups-internal]
   reject:
-    command: sbin/cupsreject
+    command: scripts/run-util sbin/cupsreject
     plugs: [network, cups-internal]
   cupsctl:
-    command: sbin/cupsctl
+    command: scripts/run-util sbin/cupsctl
     plugs: [network, cups-internal]
   cupsfilter:
-    command: sbin/cupsfilter
+    command: scripts/run-util sbin/cupsfilter
     plugs: [network, home, cups-internal]
   cupstestppd:
-    command: bin/cupstestppd
+    command: scripts/run-util bin/cupstestppd
     plugs: [network, home, cups-internal]
   ipptool:
-    command: bin/ipptool
+    command: scripts/run-util bin/ipptool
     plugs: [network, avahi-control, home, cups-internal]
   ippfind:
-    command: bin/ippfind
+    command: scripts/run-util bin/ippfind
     plugs: [network, avahi-control, cups-internal]
   driverless:
-    command: bin/driverless
+    command: scripts/run-util bin/driverless
     plugs: [network, avahi-control, cups-internal]
   ippeveprinter:
-    command: bin/ippeveprinter
+    command: scripts/run-util bin/ippeveprinter
     plugs: [network, network-bind, avahi-control, home, raw-usb, cups-internal]
   gs:
     command: bin/gs
     plugs: [home, etc-cups]
 
 parts:
-  patches:
-    plugin: dump
-    source: patches
-    organize:
-      '*' : patches/
-    override-prime: ""
   snapd-glib:
     source: https://github.com/snapcore/snapd-glib
     source-type: git
@@ -164,16 +158,9 @@ parts:
       - -libexec
       - -share
   cups:
-    source: https://github.com/OpenPrinting/cups/releases/download/v2.3.3op2/cups-2.3.3op2-source.tar.gz
+    source: https://github.com/OpenPrinting/cups.git
+    source-type: git
     plugin: autotools
-    override-build: |
-      set -eux
-      patch -p1 < $SNAPCRAFT_STAGE/patches/cupsd-cupsfilter-snap-support.patch
-      patch -p1 < $SNAPCRAFT_STAGE/patches/cups-airprint-support.patch
-      patch -p1 < $SNAPCRAFT_STAGE/patches/cups-lpoptions-list-options-when-port-is-non-standard.patch
-      rm configure
-      autoconf
-      snapcraftctl build
     configflags:
       - --sysconfdir=/var/snap/cups/common/etc
       - --with-system-groups=root
@@ -235,11 +222,7 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
-    override-prime: |
-      set -eux
-      chmod 744 $SNAPCRAFT_STAGE/lib/cups/backend/usb
-      snapcraftctl prime
-    after: [patches, snapd-glib]
+    after: [snapd-glib]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.3.0/qpdf-10.3.0.tar.gz
     plugin: autotools
@@ -412,6 +395,7 @@ parts:
       run-cups-browsed: scripts/run-cups-browsed
       stop-cups-browsed: scripts/stop-cups-browsed
       reload-cups-browsed: scripts/reload-cups-browsed
+      run-util: scripts/run-util
       port-occupied: scripts/port-occupied
     prime:
       - scripts/

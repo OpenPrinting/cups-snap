@@ -108,7 +108,7 @@ perl -p -i \
      -e 's:^(\s*\#)?\s*DataDir\s+.*$:DataDir '"$SNAP"'/share/cups:;' \
      -e 's:^(\s*\#)?\s*DocumentRoot\s+.*$:DocumentRoot '"$SNAP"'/share/cups/doc:;' \
      -e 's:^(\s*\#)?\s*ErrorLog\s+.*$:ErrorLog '"$SNAP_DATA"'/var/log/error_log:;' \
-     -e 's:^(\s*\#)?\s*FontPath\s+.*$:FontPath '"$SNAP"'/share/cups/fonts:;' \
+     -e 's:^(\s*\#)?\s*FontPath\s+.*$:\#FontPath (NOT SUPPORTED ANY MORE):;' \
      -e 's:^(\s*\#)?\s*PageLog\s+.*$:PageLog '"$SNAP_DATA"'/var/log/page_log:;' \
      -e 's:^(\s*\#)?\s*Printcap\s+.*$:Printcap '"$SNAP_COMMON"'/etc/printcap:;' \
      -e 's:^(\s*\#)?\s*RequestRoot\s+.*$:RequestRoot '"$SNAP_DATA"'/var/spool:;' \
