@@ -55,10 +55,11 @@ Only if there is already a CUPS instance running on your system (like one instal
 
 If you want to assure that the CUPS Snap will be the only CUPS running on your system and you have a systemd-based system (like Ubuntu), run
 ```
-sudo systemctl stop cups-browsed
 sudo systemctl disable cups-browsed
-sudo systemctl stop cups
+sudo systemctl stop cups-browsed
 sudo systemctl disable cups
+sudo systemctl disable cups.socket
+sudo systemctl stop cups
 ```
 before downloading and installing the CUPS Snap. The `stop` commands stop the daemons immediately, the `disable` commands exclude them from being started during boot.
 
