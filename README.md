@@ -65,7 +65,7 @@ before downloading and installing the CUPS Snap. The `stop` commands stop the da
 
 To use use the snap's command line utilities acting on the snap's CUPS, preceed the commands with `cups.`:
 ```
-cuos,lpstat -H
+cups.lpstat -H
 cups.lpstat -v
 cups.cupsctl
 cups.lpadmin -p printer -E -v file:/dev/null
