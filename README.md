@@ -139,9 +139,10 @@ Call for testing:
 * [Call for testing on Snapcraft forum](https://forum.snapcraft.io/t/call-for-testing-openprintings-cups-snap/)
 * [Call for testing on Discourse](https://discourse.ubuntu.com/t/cups-snap-call-for-testing/)
 
-Using the CUPS Snap and developing Snaps using it:
+Printing with Snaps:
 
 * [Printing and managing printers from your Snap](https://forum.snapcraft.io/t/printing-and-managing-printers-from-your-snap/)
+* [Handling of the “cups” plug by snapd, especially auto-connection](https://forum.snapcraft.io/t/handling-of-the-cups-plug-by-snapd-especially-auto-connection/)
 
 The development of this snap is discussed on the Snapcraft forum:
 
@@ -189,3 +190,5 @@ Links on other platforms:
 * [Trello card about adding API to check client Snaps whether they plug a certain interface](https://trello.com/c/9IJToylf/1215-snapd-api-for-checking-client-snaps-whether-they-plug-a-given-interface)
 * [Pull Request on snapd for adding the client Snap checking API (merged)](https://github.com/snapcore/snapd/pull/9132)
 * [Pull request on snapd-glib for adding support for exit codes returned by snapctl commands issued via library function (merged)](https://github.com/snapcore/snapd-glib/pull/97)
+* [Pull request on snapd for making the `cups` interface implicit on classic](https://github.com/snapcore/snapd/pull/10023)
+* [Pull request on snapd for adding a new exit code for `snapctl --is-connected` for cases when the peer is from the same snap](https://github.com/snapcore/snapd/pull/10024)
