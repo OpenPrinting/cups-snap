@@ -57,33 +57,49 @@ if [ "${CUPSSTARTED}" = "0" ]; then
     exit 1
 fi
 
-# Read domain socket from CUPS' client.conf
-DOMAINSOCKET=`grep -i ServerName $CLIENTCONF | cut -d ' ' -f 2`
+PID=
 
-export CUPS_SERVER=$DOMAINSOCKET
+# Check whether CUPS is running in proxy mode, if so, do not run cups-browsed
+if  [ ! -e $SNAP_DATA/var/run/proxy-mode ]; then
+    # Standard mode, start cups-browsed
 
-# Create cups-browsed.conf if not already present
-if  [ ! -f $CONF ]; then
-    # Get upstream default config file
-    cp $SNAP/etc/cups/cups-browsed.conf $CONF
-    # Edit the configuration file
+    # Read domain socket from CUPS' client.conf
+    DOMAINSOCKET=`grep -i ServerName $CLIENTCONF | cut -d ' ' -f 2`
+
+    export CUPS_SERVER=$DOMAINSOCKET
+
+    # Create cups-browsed.conf if not already present
+    if  [ ! -f $CONF ]; then
+	# Get upstream default config file
+	cp $SNAP/etc/cups/cups-browsed.conf $CONF
+	# Edit the configuration file
+	perl -p -i \
+	     -e 's:^#\s*DebugLogging\s+file\s*$:DebugLogging file\n:;' \
+	     -e 's:^(#\s*)?BrowseRemoteProtocols\s+\.*\s*$:BrowseRemoteProtocols dnssd cups\n:;' \
+	     -e 's:^#\s*CreateIPPPrinterQueues\s+All\s*$:CreateIPPPrinterQueues All\n:;' \
+	     $CONF
+    fi
+
+    # Set paths for the snap
     perl -p -i \
-	 -e 's:^#\s*DebugLogging\s+file\s*$:DebugLogging file\n:;' \
-	 -e 's:^(#\s*)?BrowseRemoteProtocols\s+\.*\s*$:BrowseRemoteProtocols dnssd cups\n:;' \
-	 -e 's:^#\s*CreateIPPPrinterQueues\s+All\s*$:CreateIPPPrinterQueues All\n:;' \
+	 -e 's:^(\s*\#)?\s*CacheDir\s+\S+\s*$:CacheDir '"$SNAP_DATA"'/var/cache\n:;' \
+	 -e 's:^(\s*\#)?\s*LogDir\s+\S+\s*$:LogDir '"$SNAP_DATA"'/var/log\n:;' \
+	 -e 's:^(\s*\#)?\s*DomainSocket\s+/\S+\s*$:DomainSocket '"$DOMAINSOCKET"'\n:;' \
 	 $CONF
+
+    # Spawn cups-browsed in a way that we can grab its PID
+    exec $DAEMON -c $CONF &
+    PID=$!
+else
+    # Proxy mode, do not start cups-browsed
+
+    # Spawn a dummy daemon in a way that we can grab its PID
+    # The dummy daemon keeps this script running and can be stopped by
+    # stop-cups-browsed the same way as cups-browsed
+    ( while true; do sleep 3600; done ) &
+    PID=$!
 fi
 
-# Set paths for the snap
-perl -p -i \
-     -e 's:^(\s*\#)?\s*CacheDir\s+\S+\s*$:CacheDir '"$SNAP_DATA"'/var/cache\n:;' \
-     -e 's:^(\s*\#)?\s*LogDir\s+\S+\s*$:LogDir '"$SNAP_DATA"'/var/log\n:;' \
-     -e 's:^(\s*\#)?\s*DomainSocket\s+/\S+\s*$:DomainSocket '"$DOMAINSOCKET"'\n:;' \
-     $CONF
-
-# Spawn cups-browsed in a way that we can grab its PID
-exec $DAEMON -c $CONF &
-PID=$!
 echo $PID > $SNAP_DATA/var/run/cups-browsed.pid
 
 # Keep this script running until cups-browsed terminates

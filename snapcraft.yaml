@@ -22,9 +22,12 @@ environment:
   FONTCONFIG_SYSROOT: /snap/cups/current/etc/fonts
 
 plugs:
-  # This is needed for the script which does the migration of the
-  # configuration and print queues of a classically installed CUPS
-  # when it is replaced by this CUPS Snap
+  # This interface is needed for checking whether CUPS in this
+  # Snap should run as a proxy for the system's CUPS or whether
+  # this Snap's CUPS is the standard CUPS for the system.
+  # This interface also serves for scripts which do a migration
+  # of the configuration and print queues of a classically
+  # installed CUPS when it is replaced by this CUPS Snap
   etc-cups:
     interface: system-files
     read:
@@ -402,3 +405,16 @@ parts:
     build-packages:
       - gcc
     after: [cups, cups-filters, selected-fonts, utils]
+  cups-proxyd:
+    plugin: make
+    source: cups-proxyd
+    build-packages:
+      - gcc
+      - libglib2.0-dev
+      - libavahi-common-dev
+      - libavahi-client-dev
+      - libavahi-glib-dev
+    organize:
+      usr/lib/cups/backend: lib/cups/backend
+      usr/sbin: sbin
+    after: [cups, cups-filters]
