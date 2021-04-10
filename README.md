@@ -2,6 +2,7 @@
 
 Complete CUPS printing stack in a Snap
 
+
 ## Introduction
 
 This is a complete printing stack in a Snap. It contains not only CUPS but also cups-filters, Ghostscript, and Poppler (the two latter as PostScript and PDF interpreters). This is everything (except printer-model-specific drivers) which is needed for printing.
@@ -13,15 +14,34 @@ This Snap is designed for the following two use cases:
 
 Note that this Snap is still under development and therefore there are probably still many bugs.
 
+
 ## Installation and Usage
 
 The CUPS Snap works on both classic systems (standard Linux distributions like Ubuntu Desktop) and purely snap-based systems (like Ubuntu Core).
 
-If on your classic system there is already CUPS running, you do not neccessarily need to stop or remove this CUPS for using the Snap. The Snap's CUPS will run on port 10631 (instead of port 631) then and it will use the domain socket `/var/snap/cups/common/run/cups.sock` (instead of the standard `(/var)/run/cups/cups.sock`). So you can have two CUPS instances (each with their own cups-browsed) on one system, for example for development.
+If on your classic system there is already CUPS running, the CUPS Snap's cups-daemon works as a proxy to protect the system's CUPS daemon against adminstrative requests from applications from the Snap Store (proxy mode). For this the CUPS Snap will get automatically installed as soon as a Snap which prints is installed from the Snap Store. Then it does it s job fully automatically without any configuration (like creating queues) needed by the user.
+
+For developemnt purposes the CUPS Snap's CUPS daemon can also be run as an independent second daemon in parallel to the system's CUPS, on an alternative port and domain socket (parallel mode). Note that running two independent CUPS instances on one system is not recommended on production systems. It is error-prone and confusing for users. This mode is also not well tested. Disable or remove your system's CUPS if you want to use the Snap's CUPS as your standard CUPS.
+
+Usually if you decide to manually install this Snap, you want to use it as the standard CUPS for your system. Therefore we tell here how to disable the system's original, classically installed CUPS and run the CUPS Snap as standard CUPS (stand-alone mode).
+
+
+### Stand-alone mode
+
+**NOTE: The CUPS Snap does not support classic printer drivers (consisting of filters and PPD files, usually installed as DEB or RPM packages), but only Printer Applications (see below)**
 
 If the Snap's CUPS runs alone, the standard resources, port 631 and `(/var)/run/cups/cups.sock` are used to assure maximum compatibility with both snapped and classically installed client applications.
 
-Note that running two CUPS instances on one system is not recommended on production systems. Disable or remove your system's CUPS if you want to use the Snap's CUPS.
+To assure that the CUPS Snap will be the only CUPS running on your system and you have a systemd-based system (like Ubuntu), run
+```
+sudo systemctl disable cups-browsed
+sudo systemctl stop cups-browsed
+sudo systemctl disable cups
+sudo systemctl disable cups.socket
+sudo systemctl stop cups
+sudo mv /etc/cups /etc/cups.old
+```
+before downloading and installing the CUPS Snap. The `stop` commands stop the daemons immediately, the `disable` commands exclude them from being started during boot. The `mv` command makes the system's CUPS completely invisible to the CUPS Snap, to prevent the Snap from entering proxy mode.
 
 The Snap is available in the Edge channel of the Snap Store and from there one can install it via
 
@@ -51,18 +71,6 @@ with `<file>.snap` being the name of the snap file.
 
 For maximum compatibility with most snapped and unsnapped applications this Snap's CUPS will be accessible through the usual socket /run/cups/cups.sock and port 631.
 
-Only if there is already a CUPS instance running on your system (like one installed via classic Debian or RPM packages), the Snap's CUPS will run on port 10631 and on the /var/snap/cups/common/run/cups.sock domain socket.
-
-If you want to assure that the CUPS Snap will be the only CUPS running on your system and you have a systemd-based system (like Ubuntu), run
-```
-sudo systemctl disable cups-browsed
-sudo systemctl stop cups-browsed
-sudo systemctl disable cups
-sudo systemctl disable cups.socket
-sudo systemctl stop cups
-```
-before downloading and installing the CUPS Snap. The `stop` commands stop the daemons immediately, the `disable` commands exclude them from being started during boot.
-
 To use use the snap's command line utilities acting on the snap's CUPS, preceed the commands with `cups.`:
 ```
 cups.lpstat -H
@@ -86,11 +94,52 @@ The web interface can be accessed under
 ```
 http://localhost:631/
 ```
-or
+To make administrative tasks working, you have to enter user name and password of a user in the "lpadmin" or "adm" group, or "root" and the root password if your system is configured appropriately.
+
+You can also use the standard CUPS utilities installed on your system when the CUPS Snap is in stand-alone mode as then its CUPS daemon listens on the standard domain and port.
+
+
+### Proxy mode
+
+Only if there is already a CUPS instance running on your system (like one installed via classic Debian or RPM packages), the Snap's CUPS will run in a proxy mode which makes the CUPS Snap's CUPS daemon run in parallel to the system's classic CUPS daemon to serve as a proxy for snapped applications to prevent those applications from performing administrative tasks (like modifying print queues) on the system's CUPS.
+
+If you have an application which prints in a Snap and such a Snap is installed from the Snap Store, the Snap's "cups" plug is auto-connected to the appropriate slot of the CUPS Snap, and if the CUPS Snap is not installed, it gets installed automatically, going into stand-alone mode if the system has no CUPS installed and into proxy mode otherwise, fully automatically without need of user intervention. The snapped application can only print to the snapped CUPS, never to a classically installed system CUPS, and the snapped CUPS only allows it to list queues, jobs, and printer options, and to print, not to do admninistrative tasks as creating or modifying queues.
+
+If there is a classic CUPS installed and therefore the snapped CUPS is in proxy mode, the snapped CUPS mirrors all print queues of the classic CUPS and so the snapped application sees the same printers as an unsnapped application which directly accesses the system's CUPS. The mirrored queues have exactly the same printer options and jobs are passed unfiltered to the system's CUPS where the user's drivers, especially classic and proprietary drivers which are not available as Printer Applications, convert the data to the printer's language and send the jobs off to the physical printers.
+
+Even discovered IPP printers for which the system's CUPS creates temporary queues on-demand are mirrored, but as permanent queues on the snapped CUPS.
+
+The configuration of the system's CUPS does not need to be changed by the user for that, nor is it changed by the CUPS Snap (the CUPS Snap does no administrative action on the system's classic CUPS at all). The printers of the system's CUPS do not even need to get shared for the proxy to work. If unsnapped applications on the local machine can print, the proxy works.
+
+All this goes fully automatically. The user does not need to do anything with the CUPS Snap in proxy mode. All printing administration he performs on the system's CUPS.
+
+
+### Parallel mode
+
+**NOTE: Using this mode is not reconmmended on production systems. It is not well tested and error-prone. Two independent CUPS daemons on one system can also easily confuse users.**
+
+You can also run the CUPS daemon of the CUPS Snap as an independent second CUPS daemon in parallel to the system's classically installed CUPS daemon. This is for development purposes to test the interaction of the two CUPS daemons and their attached cups-browsed instances.
+
+This mode does not get invoked automatically. To activate it, you have to create a file to tell the Snap to use this mode instead of proxy mode if there is already a classically installed CUPS. Run
+
+```
+sudo touch /var/snap/cups/common/no-proxy
+```
+and then restart the Snap with
+```
+sudo snap stop cups
+sudo snap start cups
+```
+to switch into parallel mode. Remove the file and restart the CUPS Snap again to get back to proxy mode. Note that proxy mode removes all print queues you have created in parallel mode.
+
+In this mode the Snap's CUPS will run on port 10631 (instead of port 631) and it will use the domain socket `/var/snap/cups/common/run/cups.sock` (instead of the standard `(/var)/run/cups/cups.sock`).
+
+The Snap's utilities (names prefixed with `cups.`) will access the Snap's CUPS, the system's utilities (no prefixes) will access the system's CUPS.
+
+The web interface is available under
 ```
 http://localhost:10631/
 ```
-To make administrative tasks working, you have to enter user name and password of a user in the "lpadmin" or "adm" group, or "root" and the root password if your system is configured appropriately.
 
 You can also access the snap's CUPS with the system's utilities by specifying the server (example if the snap's CUPS runs in parallel with a system's one, on port 10631 and /var/snap/cups/common/run/cups.sock):
 ```
@@ -105,6 +154,35 @@ interface:
 ```
 sudo snap connect cups:cups-internal cups:cups-control
 ```
+
+
+### cups-browsed
+
+cups-browsed is automatically started together with CUPS in both stand-alone and parallel mode. So queues to discovered IPP printers and shared queues on remote CUPS servers get automatically created.
+
+
+### Configuration files and logs
+
+Independent in which mode the CUPS Snap is running, the configuration files are in the
+```
+/var/snap/cups/common/etc/cups
+```
+directory. They can be edited. To make sure you chnges do not get overwritten by CUPS and to get your changes activated, stop the CUPS Snap before editing
+```
+sudo snap stop cups
+```
+and after editing start it again:
+```
+sudo snap start cups
+```
+
+Note that some items in the configuration files cannot be changed and get overwritten by the CUPS Snap when it is started. These settings are required for CUPS being able to run in the confinements of a Snap.
+
+Log files you find in
+```
+/var/snap/cups/var/log
+```
+The CUPS Snap is set to debug mode by default, so you have verbose logs for CUPS (`error_log`), cups-browsed (`cups-browsed_log`, stand-alone and parallel mode), and cups-proxyd (`cups-proxyd_log`, proxy mode).
 
 
 ## What is planned/still missing?
@@ -146,6 +224,7 @@ Printing with Snaps:
 
 The development of this snap is discussed on the Snapcraft forum:
 
+* [Handling of the “cups” plug by snapd, especially auto-connection (How we came to the proxy mode of the CUPS Snap)](https://forum.snapcraft.io/t/handling-of-the-cups-plug-by-snapd-especially-auto-connection/)
 * [General development](https://forum.snapcraft.io/t/snapping-cups-printing-stack-avahi-support-system-users-groups/)
 * [Developer sprint Sep 17th, 2018](https://forum.snapcraft.io/t/developer-sprint-sep-17th-2018/)
 * [Interface request: “cups-control” on CUPS snap and including D-Bus](https://forum.snapcraft.io/t/interface-request-cups-control-on-cups-snap-and-including-d-bus/)
