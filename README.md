@@ -34,14 +34,23 @@ If the Snap's CUPS runs alone, the standard resources, port 631 and `(/var)/run/
 
 To assure that the CUPS Snap will be the only CUPS running on your system and you have a systemd-based system (like Ubuntu), run
 ```
-sudo systemctl disable cups-browsed
+sudo systemctl mask cups-browsed
 sudo systemctl stop cups-browsed
-sudo systemctl disable cups
-sudo systemctl disable cups.socket
+sudo systemctl mask cups
+sudo systemctl mask cups.socket
 sudo systemctl stop cups
+```
+and either
+```
 sudo mv /etc/cups /etc/cups.old
 ```
-before downloading and installing the CUPS Snap. The `stop` commands stop the daemons immediately, the `disable` commands exclude them from being started during boot. The `mv` command makes the system's CUPS completely invisible to the CUPS Snap, to prevent the Snap from entering proxy mode.
+or
+```
+sudo touch /var/snap/cups/common/no-proxy
+```
+before downloading and installing the CUPS Snap.
+
+The `stop` commands stop the daemons immediately, the `mask` commands exclude them from being started during boot (use `unmask` to restore). The `mv` command makes the system's CUPS completely invisible to the CUPS Snap, to prevent the Snap from entering proxy mode. The alternative `touch` command creates a file to make the CUPS Snap suppress its proxy mode altogether (remove the file to re-enable proxy mode), meaning that, as before, we get stand-alone mode if no classic cupsd is running and parallel mode otherwise.
 
 The Snap is available in the Edge channel of the Snap Store and from there one can install it via
 
