@@ -180,7 +180,7 @@ Note that some items in the configuration files cannot be changed and get overwr
 
 Log files you find in
 ```
-/var/snap/cups/var/log
+/var/snap/cups/current/var/log
 ```
 The CUPS Snap is set to debug mode by default, so you have verbose logs for CUPS (`error_log`), cups-browsed (`cups-browsed_log`, stand-alone and parallel mode), and cups-proxyd (`cups-proxyd_log`, proxy mode).
 
