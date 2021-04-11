@@ -232,9 +232,25 @@ else
 	rm -f $SNAP_COMMON/etc/cups/cupsd.conf.new
 fi
 
+# If we stay with the standard domain socket as $DOMAINSOCKET we are in
+# stand-alone mode (no classically installed CUPS). In this case we let CUPS
+# listen on BOTH the the standard domain and the alternative (Snap) domain
+# The alternative domain is used by snapped client applications so that those
+# always use this domain and so ALWAYS access the snapped CUPS (which has Snap
+# mediation) and NEVER an installed classic CUPS (which often does not have
+# SNAP mediation).
+# This way CUPS is listening on the alternative domain in all three modes,
+# stand-alone, proxy, and parallel
+LISTENLINES=
+if [ "$DOMAINSOCKET" = "$ALTDOMAINSOCKET" ]; then
+    LISTENLINES="Listen $DOMAINSOCKET"
+else
+    LISTENLINES="Listen $DOMAINSOCKET\nListen $ALTDOMAINSOCKET"
+fi
+
 # Set the domain socket in cupsd.conf
 ( cat $SNAP_COMMON/etc/cups/cupsd.conf | grep -v Listen > $SNAP_COMMON/etc/cups/cupsd.conf.new || true ) && \
-    echo Listen $DOMAINSOCKET > $SNAP_COMMON/etc/cups/cupsd.conf && \
+    echo $LISTENLINES > $SNAP_COMMON/etc/cups/cupsd.conf && \
     cat $SNAP_COMMON/etc/cups/cupsd.conf.new >> $SNAP_COMMON/etc/cups/cupsd.conf && \
     rm -f $SNAP_COMMON/etc/cups/cupsd.conf.new
 
