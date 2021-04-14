@@ -8,7 +8,9 @@ confinement: strict
 
 # Only build on the architectures supported
 architectures:
-  - build-on: [amd64, arm64, armhf]
+  - build-on: amd64
+  - build-on: arm64
+  - build-on: armhf
 
 # System user for filters and backends to drop privileges, "lp" is not
 # available in a Snap
