@@ -8,7 +8,6 @@ mkdir -p $SNAP_DATA/var/log
 mkdir -p $SNAP_DATA/var/cache/fontconfig
 mkdir -p $SNAP_COMMON/etc/cups/ppd
 mkdir -p $SNAP_COMMON/etc/cups/ssl
-mkdir -p $SNAP_COMMON/etc/fonts/conf.d
 mkdir -p $SNAP_COMMON/run
 mkdir -m 0755 -p /run/cups
 
@@ -42,16 +41,11 @@ mkdir -p $CUPSTMPDIR
 chown -R root.snap_daemon $CUPSTMPDIR
 chmod -R 1770 $CUPSTMPDIR
 
-# Activate full debug logging of cupsd and libcups
-# (Needs "- --enable-debug-printfs" be uncommented in CUPS' configflags
-#  in snapcraft.yaml)
+# Activate full debug logging of cupsd and libcups (Needs "-
+# --enable-debug-printfs" be uncommented in CUPS'
+# autotools-configure-parameters in snapcraft.yaml)
 #export CUPS_DEBUG_LOG=$SNAP_DATA/var/log/debug_log
 #export CUPS_DEBUG_LEVEL=99
-
-# Config file and directories for fontconfig
-export FONTCONFIG_FILE=$SNAP_COMMON/etc/fonts/fonts.conf
-export FONTCONFIG_PATH=$SNAP/etc/fonts/conf.d
-export FONTCONFIG_SYSROOT=$SNAP/etc/fonts
 
 # Check whether the user and group "snap_daemon" for filters and
 # backends exist and the Snap is allowed to use it and only if not run
@@ -117,12 +111,6 @@ perl -p -i \
      -e 's:^(\s*\#)?\s*StateDir\s+.*$:StateDir '"$SNAP_DATA"'/var/run:;' \
      -e 's:^(\s*\#)?\s*TempDir\s+.*$:TempDir '"$SNAP_DATA"'/var/spool/tmp:;' \
      $SNAP_COMMON/etc/cups/cups-files.conf
-grep -q 'PassEnv FONTCONFIG_FILE' $SNAP_COMMON/etc/cups/cups-files.conf ||
-    echo PassEnv FONTCONFIG_FILE >> $SNAP_COMMON/etc/cups/cups-files.conf
-grep -q 'PassEnv FONTCONFIG_PATH' $SNAP_COMMON/etc/cups/cups-files.conf ||
-    echo PassEnv FONTCONFIG_PATH >> $SNAP_COMMON/etc/cups/cups-files.conf
-grep -q 'PassEnv FONTCONFIG_SYSROOT' $SNAP_COMMON/etc/cups/cups-files.conf ||
-    echo PassEnv FONTCONFIG_SYSROOT >> $SNAP_COMMON/etc/cups/cups-files.conf
 
 # Determine if we have a classically installed system CUPS (from
 # DEB/RPM/source for example). If so, we will run as a proxy to pass
@@ -260,22 +248,6 @@ touch $SNAP_COMMON/etc/cups/client.conf
     echo ServerName $DOMAINSOCKET > $SNAP_COMMON/etc/cups/client.conf && \
     cat $SNAP_COMMON/etc/cups/client.conf.new >> $SNAP_COMMON/etc/cups/client.conf && \
     rm -f $SNAP_COMMON/etc/cups/client.conf.new
-
-# Create fonts.conf if not already present
-if [ ! -f $FONTCONFIG_FILE ]; then
-    # Get default fonts.conf
-    FONTSCONF=$SNAP/etc/fonts/fonts.conf
-    cp $FONTSCONF $FONTCONFIG_FILE
-fi
-
-# Set paths for the snap
-perl -p -i \
-     -e 's:<dir>\S*/share/cups/fonts</dir>:<dir>'"$SNAP"'/share/cups/fonts</dir>:;' \
-     -e 's:<dir>\S*/usr/share/fonts</dir>:<dir>'"$SNAP"'/share/cups/fonts</dir>:;' \
-     -e 's:<cachedir>\S*/var/cache/fontconfig</cachedir>:<cachedir>'"$SNAP_DATA"'/var/cache/fontconfig</cachedir>:;' \
-     -e 's:<(cache|)dir>/usr/\S*</(cache|)dir>::;' \
-     -e 's:<(cache|)dir>~\S*</(cache|)dir>::;' \
-     $FONTCONFIG_FILE
 
 # Create snmp.conf if not already present
 if [ ! -f $SNAP_COMMON/etc/cups/snmp.conf ]; then

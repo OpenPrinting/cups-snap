@@ -1,5 +1,5 @@
 name: cups
-base: core18 # The base snap is the execution environment for this snap
+base: core20 # The base snap is the execution environment for this snap
 version: 0.1.0
 summary: CUPS-based printing stack snap
 description: Complete printing environment in a snap
@@ -18,14 +18,19 @@ architectures:
 system-usernames:
   snap_daemon: shared
 
+# Make fontconfig for the texttopdf and bannertopdf filters working
+layout:
+  /etc/fonts:
+    bind: $SNAP/etc/fonts
+  /usr/share/fonts:
+    bind: $SNAP/usr/share/fonts
+  /var/cache/fontconfig:
+    bind: $SNAP_DATA/var/cache/fontconfig
+
 environment:
   CUPS_SERVERROOT: /var/snap/cups/common/etc/cups
   CUPS_DATADIR: /snap/cups/current/share/cups
   CUPS_SERVERBIN: /snap/cups/current/lib/cups
-  CUPS_FONTPATH: /snap/cups/current/share/cups/fonts
-  FONTCONFIG_FILE: /var/snap/cups/common/etc/fonts/fonts.conf
-  FONTCONFIG_PATH: /snap/cups/current/etc/fonts/conf.d
-  FONTCONFIG_SYSROOT: /snap/cups/current/etc/fonts
 
 plugs:
   # This interface is needed for checking whether CUPS in this
@@ -158,7 +163,7 @@ parts:
       - libjson-glib-dev
       - libsoup2.4-dev
     stage-packages:
-      - libicu60
+      - libicu66
       - libjson-glib-1.0-0
       - libsoup2.4-1
       - libxml2
@@ -170,7 +175,12 @@ parts:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
     plugin: autotools
-    configflags:
+    autotools-configure-parameters:
+      - --prefix=/
+      - --exec-prefix=/
+      - --datadir=/share
+      - --datarootdir=/share
+      - --includedir=/include
       - --sysconfdir=/var/snap/cups/common/etc
       - --with-system-groups=root
       - --disable-pam
@@ -235,6 +245,8 @@ parts:
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.3.1/qpdf-10.3.1.tar.gz
     plugin: autotools
+    autotools-configure-parameters:
+      - --prefix=/
     build-packages:
       - g++
       - libjpeg-dev
@@ -257,7 +269,8 @@ parts:
   ghostscript:
     source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9533/ghostscript-9.53.3.tar.gz
     plugin: autotools
-    configflags:
+    autotools-configure-parameters:
+      - --prefix=/
       - --without-x
       - --disable-gtk
       - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
@@ -292,7 +305,12 @@ parts:
   cups-filters:
     source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.8.tar.xz
     plugin: autotools
-    configflags:
+    autotools-configure-parameters:
+      - --prefix=/
+      - --exec-prefix=/
+      - --datadir=/share
+      - --datarootdir=/share
+      - --includedir=/include
       - --disable-mutool
       - --without-rcdir
       - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
@@ -336,16 +354,17 @@ parts:
       - libsasl2-2
       - libwind0-heimdal
       - libdb5.3
+      - fonts-freefont-ttf
+      - fonts-arphic-uming
+      - fontconfig-config
     organize:
       var/snap/cups/common/etc: etc
     prime:
-      - -etc/fonts
       - -var
       - -include
       - -share/man
       - -share/doc
       - -share/lintian
-      - -usr/share/fonts
       - -usr/share/man
       - -usr/share/doc
       - -usr/share/doc-base
@@ -353,19 +372,6 @@ parts:
       - -lib/libcupsfilters.a
       - -lib/libfontembed.a
     after: [cups, qpdf, ghostscript]
-  selected-fonts: # Temporary, fonts should come from the system
-    plugin: nil
-    source: .
-    stage-packages:
-      - fonts-freefont-ttf
-      - fonts-arphic-uming
-      - fontconfig-config
-    organize:
-      usr/share/fonts/truetype/freefont/: share/cups/fonts/
-      usr/share/fonts/truetype/arphic/: share/cups/fonts/
-    prime:
-      - etc/fonts/*
-      - share/cups/fonts/*
   utils:
     plugin: nil
     source: .
@@ -375,7 +381,7 @@ parts:
       - grep
       - libbinutils
       - libmpfr6
-      - libisl19
+      - libisl22
       - libmpc3
     organize:
       usr/bin/: bin/
@@ -410,7 +416,7 @@ parts:
       - scripts/
     build-packages:
       - gcc
-    after: [cups, cups-filters, selected-fonts, utils]
+    after: [cups, cups-filters, utils]
   cups-proxyd:
     plugin: make
     source: cups-proxyd
