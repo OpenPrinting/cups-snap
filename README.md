@@ -234,6 +234,7 @@ Printing with Snaps:
 The development of this snap is discussed on the Snapcraft forum:
 
 * [Handling of the “cups” plug by snapd, especially auto-connection (How we came to the proxy mode of the CUPS Snap)](https://forum.snapcraft.io/t/handling-of-the-cups-plug-by-snapd-especially-auto-connection/)
+* [CUPS Snap: Needs fontconfig for text filter, get “Fontconfig error: Cannot load default config file”](https://forum.snapcraft.io/t/cups-snap-needs-fontconfig-for-text-filter-get-fontconfig-error-cannot-load-default-config-file/)
 * [General development](https://forum.snapcraft.io/t/snapping-cups-printing-stack-avahi-support-system-users-groups/)
 * [Developer sprint Sep 17th, 2018](https://forum.snapcraft.io/t/developer-sprint-sep-17th-2018/)
 * [Interface request: “cups-control” on CUPS snap and including D-Bus](https://forum.snapcraft.io/t/interface-request-cups-control-on-cups-snap-and-including-d-bus/)
