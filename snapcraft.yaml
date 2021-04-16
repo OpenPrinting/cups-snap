@@ -198,31 +198,21 @@ parts:
       - autotools-dev
       - pkg-config
       - g++
-      - ghostscript
       - libavahi-client-dev
       - libavahi-common-dev
       - libavahi-compat-libdnssd-dev
       - libdbus-1-dev
-      - libfontconfig1-dev
-      - libfreetype6-dev
       - libgnutls28-dev
-      - libijs-dev
-      - libjpeg-dev
-      - libldap2-dev
       - libkrb5-dev
       - libpam0g-dev
       - libpaper-dev
-      - libpng-dev
       - libsystemd-dev
-      - libtiff5-dev
       - libusb-1.0-0-dev
       - po4a
       - po-debconf
-      - poppler-utils
-      - sharutils
       - zlib1g-dev
-      - wget
       - libapparmor-dev
+      - libsnapd-glib-dev
     stage-packages:
       - libusb-1.0-0
       - libavahi-common3
@@ -267,7 +257,7 @@ parts:
       - -usr/share/lintian
       - -lib/libqpdf.a
   ghostscript:
-    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9533/ghostscript-9.53.3.tar.gz
+    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9540/ghostscript-9.54.0.tar.gz
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -276,6 +266,7 @@ parts:
       - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
       - --enable-cups
       - --enable-freetype
+      - --without-tesseract
       - --datarootdir=/snap/cups/current/share/
       - --with-fontpath=/snap/cups/current/share/cups/fonts
       - --with-cups-serverbin=/snap/cups/current/lib/cups
