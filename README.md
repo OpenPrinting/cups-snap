@@ -243,6 +243,7 @@ The development of this snap is discussed on the Snapcraft forum:
 
 Related topics on the forum:
 
+* [No mdns support in snaps (should core have a modified nsswitch.conf ?)](https://forum.snapcraft.io/t/no-mdns-support-in-snaps-should-core-have-a-modified-nsswitch-conf/)
 * [Multiple users and groups in snaps](https://forum.snapcraft.io/t/multiple-users-and-groups-in-snaps/)
 * [Snapped daemon running as root cannot create file in directory with odd ownerships/permissions](https://forum.snapcraft.io/t/snapped-daemon-running-as-root-cannot-create-file-in-directory-with-odd-ownerships-permissions)
 * [Hardware-associated snaps - Snap Store search by hardware signature](https://forum.snapcraft.io/t/hardware-associated-snaps-snap-store-search-by-hardware-signature)
