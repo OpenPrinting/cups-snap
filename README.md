@@ -219,6 +219,15 @@ to get your first Printer Application, the [PostScript Printer Application](http
 See "Printer Applications" below.
 
 
+## Default paper size
+
+The CUPS in this Snap uses libpaper which allows to configure a system-wide default paper size by simply dropping the name of the desired size into the configuration file named `papersize`, usually "a4" or "letter". CUPS is then supposed to use this paper size as the default for newly created print queues.
+
+This actually works for creating queues via the CUPS web interface but not with the `lpadmin` command line utility or with some printer setup tools, so it is of restricted use.
+
+But if you are user of the web interface and get notorically the wrong paper size as default, create a file named `/var/snap/cups/common/etc/papersize` and drop the name of your desired default page size in it, in a single line, without spaces, commands, ..., simply the page size name, usually "a4" or "letter". Then restart the CUPS Snap for the change to take effect.
+
+
 ## Discussion
 
 Call for testing:
