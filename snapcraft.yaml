@@ -34,6 +34,8 @@ layout:
     bind: $SNAP_DATA/var/cache/fontconfig
   /etc/nsswitch.conf:
     bind-file: $SNAP/etc/nsswitch.conf
+  /etc/papersize:
+    bind-file: $SNAP_COMMON/etc/papersize
 
 environment:
   CUPS_SERVERROOT: /var/snap/cups/common/etc/cups
@@ -191,6 +193,7 @@ parts:
       - --includedir=/include
       - --sysconfdir=/var/snap/cups/common/etc
       - --with-system-groups=root
+      - --enable-libpaper
       - --disable-pam
       - --disable-systemd
       - --without-rcdir
@@ -225,6 +228,7 @@ parts:
       - libusb-1.0-0
       - libavahi-common3
       - libavahi-client3
+      - libpaper1
     organize:
       var/snap/cups/common/etc: etc
     prime:
