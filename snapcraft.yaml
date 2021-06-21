@@ -245,7 +245,7 @@ parts:
       - -usr/share/lintian
     after: [snapd-glib]
   qpdf:
-    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.3.1/qpdf-10.3.1.tar.gz
+    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.3.2/qpdf-10.3.2.tar.gz
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -306,7 +306,7 @@ parts:
       snap/cups/current/share: share
     after: [cups]
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.8.tar.xz
+    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.9.tar.xz
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
