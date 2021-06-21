@@ -306,7 +306,7 @@ parts:
       snap/cups/current/share: share
     after: [cups]
   cups-filters:
-    source: http://www.openprinting.org/download/cups-filters/cups-filters-1.28.9.tar.xz
+    source: https://github.com/OpenPrinting/cups-filters/releases/download/1.28.9/cups-filters-1.28.9.tar.xz
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
