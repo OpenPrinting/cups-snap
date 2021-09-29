@@ -274,9 +274,11 @@ Printer Applications
 * [cups-filters 2019 (PDF, pages 16-17)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2019.pdf)
 * [cups-filters 2020 (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2020.pdf)
 
-Snapping of ippusbxd (we should snap [ipp-usb](https://github.com/OpenPrinting/ipp-usb) instead)
+Snapping of [ipp-usb](https://github.com/OpenPrinting/ipp-usb)
 
-* [Feature request: Support for systemd templates](https://forum.snapcraft.io/t/feature-request-support-for-systemd-templates/)
+* [DONE] ipp-usb Snap in the [Snap Store](https://snapcraft.io/ipp-usb)
+* ippusbxd got discontinued and replaced by ipp-usb, so it will not get snapped
+* [Feature request: Support for systemd templates](https://forum.snapcraft.io/t/feature-request-support-for-systemd-templates/) (Not needed for the ipp-usb Snap)
 
 Requests for auto-connection to interfaces
 
