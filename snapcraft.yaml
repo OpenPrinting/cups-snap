@@ -198,8 +198,7 @@ parts:
       - --disable-systemd
       - --without-rcdir
       - --with-docdir=/share/cups/doc
-      - --enable-snapped-cupsd
-      - --with-cups-control-slot=cups-control
+      - --with-container=snap
       #- --enable-debug-printfs
     build-packages:
       - patch
