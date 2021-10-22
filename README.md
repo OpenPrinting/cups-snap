@@ -2,6 +2,9 @@
 
 Complete CUPS printing stack in a Snap
 
+[CUPS in the Snap Store](https://snapcraft.io/cups)
+
+[All from OpenPrinting in the Snap Store](https://snapcraft.io/search?q=OpenPrinting)
 
 ## Introduction
 
@@ -28,7 +31,7 @@ Usually if you decide to manually install this Snap, you want to use it as the s
 
 ### Stand-alone mode
 
-**NOTE: The CUPS Snap does not support classic printer drivers (consisting of filters and PPD files, usually installed as DEB or RPM packages), but only Printer Applications (see below)**
+**NOTE: The CUPS Snap does not support classic printer drivers (consisting of filters and PPD files, usually installed as DEB or RPM packages), but only Printer Applications (see below, links to Printer Applications: "Printer Applications" under "Discussion and Links")**
 
 If the Snap's CUPS runs alone, the standard resources, port 631 and `(/var)/run/cups/cups.sock` are used to assure maximum compatibility with both snapped and classically installed client applications.
 
@@ -203,20 +206,19 @@ The CUPS Snap is set to debug mode by default, so you have verbose logs for CUPS
 
 ## Change on design goals: Printer drivers deprecated -> Printer Applications
 
-Printer drivers (printer-model-specific software and/or data) in the form of filters and PPD files added to CUPS are deprecated. They get replaced by Printer Applications, simple daemons which emulate a driverless IPP printer on localhost and do the filtering of the incoming jobs and connection to the printer. This daemons will also be packaged in Snaps, to make the driver packages distribution-independent.
+Printer drivers (printer-model-specific software and/or data) in the form of filters and PPD files added to CUPS are deprecated. They get replaced by Printer Applications, simple daemons which emulate a driverless IPP printer on localhost and do the filtering of the incoming jobs and connection to the printer. These daemons will also be packaged in Snaps, to make the driver packages distribution-independent.
 
 Therefore we will not add a printer driver interface as it is not needed any more.
 
 Note that this Snap DOES NOT support classic printer drivers!
 
-If you have a PostScript Printer, do
+Nearly all free software printer drivers (at least the ones for which there are packages in the Debian Linux distribution) are available in Printer Application Snaps now. See the section "Printer Applications" under "Discussion and Links" below.
 
-```
-snap install --edge ps-printer-app
-```
-to get your first Printer Application, the [PostScript Printer Application](https://github.com/OpenPrinting/ps-printer-app).
+There is a Printer Application for [PostScript](https://snapcraft.io/ps-printer-app), [HPLIP](https://snapcraft.io/hplip-printer-app), and [Gutenprint](https://snapcraft.io/gutenprint-printer-app). All the other drivers are joined together in the [GhostScript Printer Application](https://snapcraft.io/ghostscript-printer-app).
 
-See "Printer Applications" below.
+See also the [overview in the Snap Store](https://snapcraft.io/search?q=OpenPrinting).
+
+If your printer is a driverless IPP printer (AirPrint, Mopria, IPP Everywhere, Wi-Fi Direct Print) you do not need a Printer Application. If you connect such a printer via USB, you need [IPP-over-USB support](https://github.com/OpenPrinting/ipp-usb), also available as [Snap](https://snapcraft.io/ipp-usb).
 
 
 ## Default paper size
@@ -228,7 +230,7 @@ This actually works for creating queues via the CUPS web interface but not with 
 But if you are user of the web interface and get notorically the wrong paper size as default, create a file named `/var/snap/cups/common/etc/papersize` and drop the name of your desired default page size in it, in a single line, without spaces, commands, ..., simply the page size name, usually "a4" or "letter". Then restart the CUPS Snap for the change to take effect.
 
 
-## Discussion
+## Discussion and Links
 
 Call for testing:
 
@@ -252,6 +254,7 @@ The development of this snap is discussed on the Snapcraft forum:
 
 Related topics on the forum:
 
+* [How to add or workaround a udev rule](https://forum.snapcraft.io/t/how-to-add-or-workaround-a-udev-rule/)
 * [No mdns support in snaps (should core have a modified nsswitch.conf ?)](https://forum.snapcraft.io/t/no-mdns-support-in-snaps-should-core-have-a-modified-nsswitch-conf/)
 * [Multiple users and groups in snaps](https://forum.snapcraft.io/t/multiple-users-and-groups-in-snaps/)
 * [Snapped daemon running as root cannot create file in directory with odd ownerships/permissions](https://forum.snapcraft.io/t/snapped-daemon-running-as-root-cannot-create-file-in-directory-with-odd-ownerships-permissions)
@@ -265,8 +268,12 @@ Getting the snap into the store:
 
 Printer Applications
 
-* [PostScript Printer Application](https://github.com/OpenPrinting/ps-printer-app)
-* [PAPPL](https://github.com/michaelrsweet/pappl/)
+* [PostScript Printer Application](https://github.com/OpenPrinting/ps-printer-app) ([Snap Store](https://snapcraft.io/ps-printer-app)): Printer Application Snap for PostScript printers which are supported by the manufacturer's PPD files. User can add PPD files if the needed one is not included or outdated.
+* [Ghostscript Printer Application](https://github.com/OpenPrinting/ghostscript-printer-app) ([Snap Store](https://snapcraft.io/ghostscript-printer-app)): Printer Application with Ghostscript and many other drivers, for practically all Linux-supported printers which are not PostScript and not supported by HPLIP or Gutenprint.
+* [HPLIP Printer Application](https://github.com/OpenPrinting/hplip-printer-app) ([Snap Store](https://snapcraft.io/hplip-printer-app)): HPLIP in a Printer Application Snap. Supports nearly every HP printer ever made. Installing HP's proprietary plugin (needed for a few printers) into the Snap is supported and easily done with the web interface.
+* [Gutenprint Printer Application](https://github.com/OpenPrinting/gutenprint-printer-app) ([Snap Store](https://snapcraft.io/gutenprint-printer-app)): High quality output and a lot of knobs to adjust, especially for Epson and Canon inkjets but also for many other printers, in a Printer Application Snap.
+* [PAPPL](https://github.com/michaelrsweet/pappl/): Base infrastructure for all the Printer Applications linked above.
+* [PAPPL CUPS driver retro-fit library](https://github.com/OpenPrinting/pappl-retrofit): Retro-fit layer to integrate CUPS drivers consisting of PPD files, CUPS filters, and CUPS backends into Printer Applications.
 * [Printer Applications (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/printer-applications-may-2020.pdf)
 * [CUPS 2018 (PDF, pages 28-29)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-may-18.pdf)
 * [CUPS 2019 (PDF, pages 30-35)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-april-19.pdf)
