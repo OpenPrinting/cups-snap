@@ -204,7 +204,7 @@ The CUPS Snap is set to debug mode by default, so you have verbose logs for CUPS
   CUPS Snap
 
 
-## Change on design goals: Printer drivers deprecated -> Printer Applications
+## Printer drivers deprecated -> Printer Applications
 
 Printer drivers (printer-model-specific software and/or data) in the form of filters and PPD files added to CUPS are deprecated. They get replaced by Printer Applications, simple daemons which emulate a driverless IPP printer on localhost and do the filtering of the incoming jobs and connection to the printer. These daemons will also be packaged in Snaps, to make the driver packages distribution-independent.
 
@@ -217,6 +217,8 @@ Nearly all free software printer drivers (at least the ones for which there are 
 There is a Printer Application for [PostScript](https://snapcraft.io/ps-printer-app), [HPLIP](https://snapcraft.io/hplip-printer-app), and [Gutenprint](https://snapcraft.io/gutenprint-printer-app). All the other drivers are joined together in the [GhostScript Printer Application](https://snapcraft.io/ghostscript-printer-app).
 
 See also the [overview in the Snap Store](https://snapcraft.io/search?q=OpenPrinting).
+
+In addition, there is also the [Legacy Printer Application](https://github.com/OpenPrinting/pappl-retrofit#legacy-printer-application) contained in [pappl-retrofit](https://github.com/OpenPrinting/pappl-retrofit) which makes all drivers classically installed for the system's classically installed CUPS available in a Printer Application and this way for the CUPS Snap. It is especially helpful for drivers which are not (yet) available as Printer Application. Note that this Printer Application cannot be provided as a Snap as it otherwise had no access to the drivers.
 
 If your printer is a driverless IPP printer (AirPrint, Mopria, IPP Everywhere, Wi-Fi Direct Print) you do not need a Printer Application. If you connect such a printer via USB, you need [IPP-over-USB support](https://github.com/OpenPrinting/ipp-usb), also available as [Snap](https://snapcraft.io/ipp-usb).
 
@@ -272,6 +274,7 @@ Printer Applications
 * [Ghostscript Printer Application](https://github.com/OpenPrinting/ghostscript-printer-app) ([Snap Store](https://snapcraft.io/ghostscript-printer-app)): Printer Application with Ghostscript and many other drivers, for practically all Linux-supported printers which are not PostScript and not supported by HPLIP or Gutenprint.
 * [HPLIP Printer Application](https://github.com/OpenPrinting/hplip-printer-app) ([Snap Store](https://snapcraft.io/hplip-printer-app)): HPLIP in a Printer Application Snap. Supports nearly every HP printer ever made. Installing HP's proprietary plugin (needed for a few printers) into the Snap is supported and easily done with the web interface.
 * [Gutenprint Printer Application](https://github.com/OpenPrinting/gutenprint-printer-app) ([Snap Store](https://snapcraft.io/gutenprint-printer-app)): High quality output and a lot of knobs to adjust, especially for Epson and Canon inkjets but also for many other printers, in a Printer Application Snap.
+* [Legacy Printer Application](https://github.com/OpenPrinting/pappl-retrofit#legacy-printer-application) (not available as Snap): It is a part of the [pappl-retrofit](https://github.com/OpenPrinting/pappl-retrofit) package and it makes drivers classically installed for the system's classically installed CUPS available in a Printer Application and this way for the CUPS Snap. It is especially helpful for drivers which are not (yet) available as Printer Application.
 * [PAPPL](https://github.com/michaelrsweet/pappl/): Base infrastructure for all the Printer Applications linked above.
 * [PAPPL CUPS driver retro-fit library](https://github.com/OpenPrinting/pappl-retrofit): Retro-fit layer to integrate CUPS drivers consisting of PPD files, CUPS filters, and CUPS backends into Printer Applications.
 * [Printer Applications (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/printer-applications-may-2020.pdf)
