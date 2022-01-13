@@ -299,7 +299,8 @@ parts:
       snap/cups/current/share: share
     after: [cups]
   cups-filters:
-    source: https://github.com/OpenPrinting/cups-filters/releases/download/1.28.10/cups-filters-1.28.10.tar.xz
+    source: https://github.com/OpenPrinting/cups-filters.git
+    source-type: git
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -309,6 +310,8 @@ parts:
       - --includedir=/include
       - --disable-mutool
       - --without-rcdir
+      - --disable-universal-cups-filter
+      - --enable-individual-cups-filters
       - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
     build-packages:
       - autoconf
@@ -366,6 +369,7 @@ parts:
       - -usr/share/doc-base
       - -usr/share/lintian
       - -lib/libcupsfilters.a
+      - -lib/libppd.a
       - -lib/libfontembed.a
     after: [cups, qpdf, ghostscript]
   utils:
