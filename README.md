@@ -242,11 +242,12 @@ Call for testing:
 Printing with Snaps:
 
 * [Printing and managing printers from your Snap](https://forum.snapcraft.io/t/printing-and-managing-printers-from-your-snap/)
-* [Handling of the “cups” plug by snapd, especially auto-connection](https://forum.snapcraft.io/t/handling-of-the-cups-plug-by-snapd-especially-auto-connection/)
+* [“cups” interface merged into snapd - Additional steps to complete](https://forum.snapcraft.io/t/cups-interface-merged-into-snapd-additional-steps-to-complete/)
 
-The development of this snap is discussed on the Snapcraft forum:
+The development of this Snap is discussed on the Snapcraft forum:
 
-* [Handling of the “cups” plug by snapd, especially auto-connection (How we came to the proxy mode of the CUPS Snap)](https://forum.snapcraft.io/t/handling-of-the-cups-plug-by-snapd-especially-auto-connection/)
+* [“cups” interface merged into snapd - Additional steps to complete](https://forum.snapcraft.io/t/cups-interface-merged-into-snapd-additional-steps-to-complete/)
+* [Handling of the “cups” plug by snapd, especially auto-connection (How we came to the proxy mode of the CUPS Snap, solved)](https://forum.snapcraft.io/t/handling-of-the-cups-plug-by-snapd-especially-auto-connection/)
 * [CUPS Snap: Needs fontconfig for text filter, get “Fontconfig error: Cannot load default config file”](https://forum.snapcraft.io/t/cups-snap-needs-fontconfig-for-text-filter-get-fontconfig-error-cannot-load-default-config-file/)
 * [General development](https://forum.snapcraft.io/t/snapping-cups-printing-stack-avahi-support-system-users-groups/)
 * [Developer sprint Sep 17th, 2018](https://forum.snapcraft.io/t/developer-sprint-sep-17th-2018/)
@@ -277,12 +278,14 @@ Printer Applications
 * [Legacy Printer Application](https://github.com/OpenPrinting/pappl-retrofit#legacy-printer-application) (not available as Snap): It is a part of the [pappl-retrofit](https://github.com/OpenPrinting/pappl-retrofit) package and it makes drivers classically installed for the system's classically installed CUPS available in a Printer Application and this way for the CUPS Snap. It is especially helpful for drivers which are not (yet) available as Printer Application.
 * [PAPPL](https://github.com/michaelrsweet/pappl/): Base infrastructure for all the Printer Applications linked above.
 * [PAPPL CUPS driver retro-fit library](https://github.com/OpenPrinting/pappl-retrofit): Retro-fit layer to integrate CUPS drivers consisting of PPD files, CUPS filters, and CUPS backends into Printer Applications.
-* [Printer Applications (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/printer-applications-may-2020.pdf)
+* [Printer Applications 2020 (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/printer-applications-may-2020.pdf)
+* [Printer Applications 2021 (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/printer-applications-may-2021.pdf)
 * [CUPS 2018 (PDF, pages 28-29)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-may-18.pdf)
 * [CUPS 2019 (PDF, pages 30-35)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-plenary-april-19.pdf)
 * [cups-filters 2018 (PDF, page 11)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2018.pdf)
 * [cups-filters 2019 (PDF, pages 16-17)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2019.pdf)
 * [cups-filters 2020 (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-ippusbxd-2020.pdf)
+* [cups-filters 2021 (PDF)](https://ftp.pwg.org/pub/pwg/liaison/openprinting/presentations/cups-filters-cups-snap-ipp-usb-and-more-2021.pdf)
 
 Snapping of [ipp-usb](https://github.com/OpenPrinting/ipp-usb)
 
@@ -292,14 +295,17 @@ Snapping of [ipp-usb](https://github.com/OpenPrinting/ipp-usb)
 
 Requests for auto-connection to interfaces
 
+* [Request: CUPS Snap to use the `cups-socket-directory` attribute and auto-connection of any Snap’s “cups” plug to the “cups” slot of the CUPS Snap](https://forum.snapcraft.io/t/request-cups-snap-to-use-the-cups-socket-directory-attribute-and-auto-connection-of-any-snaps-cups-plug-to-the-cups-slot-of-the-cups-snap/)
 * [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:cups-control and also of the network-manager-observe interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
 * [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
 * [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces (DEPRECATED)](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
 
 Links on other platforms:
 
-* [Trello card about adding API to check client Snaps whether they plug a certain interface](https://trello.com/c/9IJToylf/1215-snapd-api-for-checking-client-snaps-whether-they-plug-a-given-interface)
+* [Pull request on snapd for adding the `cups` interface printing always through CUPS Snap (merged)](https://github.com/snapcore/snapd/pull/10427)
+* [Pull request on snapd for adding a new exit code for `snapctl --is-connected` for cases when the peer is from the same snap (solved differently)](https://github.com/snapcore/snapd/pull/10024)
+* [Pull request on snapd for making the `cups` interface implicit on classic (dropped)](https://github.com/snapcore/snapd/pull/10023)
 * [Pull Request on snapd for adding the client Snap checking API (merged)](https://github.com/snapcore/snapd/pull/9132)
 * [Pull request on snapd-glib for adding support for exit codes returned by snapctl commands issued via library function (merged)](https://github.com/snapcore/snapd-glib/pull/97)
-* [Pull request on snapd for making the `cups` interface implicit on classic](https://github.com/snapcore/snapd/pull/10023)
-* [Pull request on snapd for adding a new exit code for `snapctl --is-connected` for cases when the peer is from the same snap](https://github.com/snapcore/snapd/pull/10024)
+* [Pull request on CUPS to add Snap mediation (merged)](https://github.com/OpenPrinting/cups/pull/269)
+* [Trello card about adding API to check client Snaps whether they plug a certain interface](https://trello.com/c/9IJToylf/1215-snapd-api-for-checking-client-snaps-whether-they-plug-a-given-interface)
