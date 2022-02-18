@@ -238,7 +238,7 @@ parts:
       - -usr/share/lintian
     after: [snapd-glib]
   qpdf:
-    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.5.0/qpdf-10.5.0.tar.gz
+    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.6.2/qpdf-10.6.2.tar.gz
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
