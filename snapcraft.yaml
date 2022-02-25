@@ -1,10 +1,9 @@
 name: cups
 base: core20 # The base snap is the execution environment for this snap
-version: 0.1.0
 summary: CUPS-based printing stack snap
 description: Complete printing environment in a snap
-grade: devel
 confinement: strict
+adopt-info: cups
 
 # Only build on the architectures supported
 architectures:
@@ -178,6 +177,7 @@ parts:
   cups:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
+    source-tag: v2.4.1
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -194,7 +194,58 @@ parts:
       - --with-docdir=/share/cups/doc
       - --with-container=snap
       #- --enable-debug-printfs
+    override-build: |
+      set -eux
+      # Settings:
+      # Force channel: auto/devel/edge/stable
+      CHANNEL=auto
+      # Force package release number (integer) or "auto"
+      PACKAGERELEASE=auto
+      # Previous stable and development version
+      prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "amd64") | .version')"
+      if [ -z "$prevstable" ]; then
+          prevstable=0
+      fi
+      prevdevel="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "edge") | select(.channel.architecture == "amd64") | .version')"
+      if [ -z "$prevdevel" ]; then
+          prevdevel=0
+      fi
+      # Previous version in general
+      dpkg --compare-versions "$prevdevel" lt "$prevstable" && prevversion=$prevstable || prevversion=$prevdevel
+      # Current upstream version of CUPS
+      upstreamversion="$(git describe --tags --always | sed -e 's/^v//;s/-/+git/;y/-/./')"
+      # Determine package release number
+      if test "x$PACKAGERELEASE" = "xauto"; then
+          packagerelease=`echo "$prevversion" | perl -p -e 's/^('"$upstreamversion"'\-(\d+)|.*)$/\2/'`
+          if [ -z "$packagerelease" ]; then
+              packagerelease=1
+          else
+              packagerelease=$(( $packagerelease + 1 ))
+          fi
+      else
+          packagerelease=$PACKAGERELEASE
+      fi
+      # Compose version string
+      version="$upstreamversion-$packagerelease"
+      # Select channel
+      if test "x$CHANNEL" = "xedge" -o "x$CHANNEL" = "xdevel"; then
+          grade=devel
+      elif test "x$CHANNEL" = "xstable"; then
+          grade=stable
+      else
+          [ -n "$(echo $version | grep "+git")" ] && grade=devel || grade=stable
+      fi
+      # Set version and grade (channel)
+      snapcraftctl set-version "$version"
+      snapcraftctl set-grade "$grade"
+      # Do the actual build task
+      snapcraftctl build
     build-packages:
+      - git
+      - sed
+      - curl
+      - jq
+      - perl-base
       - patch
       - autoconf
       - automake
