@@ -59,6 +59,7 @@ slots:
     interface: cups-control
   cups:
     interface: cups
+    cups-socket-directory: $SNAP_COMMON/run
 
 apps:
   cupsd:
