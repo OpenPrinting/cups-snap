@@ -254,7 +254,7 @@ httpConnectEncryptShortTimeout(const char *host, int port,
 int
 http_timeout_cb(http_t *http, void *user_data)
 {
-  debug_printf("HTTP timeout! (consider increasing HttpLocalTimeout value)\n");
+  debug_printf("HTTP timeout!\n");
   return 0;
 }
 
@@ -306,6 +306,8 @@ http_connect(http_t **conn, const char *server)
 static http_t *
 http_connect_proxy(void)
 {
+  if (!proxy_cups_server)
+    return NULL;
   cupsSetServer(proxy_cups_server);
   return http_connect(&proxy_conn, proxy_cups_server);
 }
@@ -339,6 +341,8 @@ http_close(http_t **conn)
 static void
 http_close_proxy(void)
 {
+  if (!proxy_cups_server)
+    return;
   debug_printf("cups-proxyd: Closing connection to proxy CUPS daemon.\n");
   http_close(&proxy_conn);
 }
@@ -524,6 +528,9 @@ set_default_printer_on_proxy(const char *printer) {
   debug_printf("Setting printer %s as default on proxy CUPS daemon.\n",
 	       printer);
 
+  if (!proxy_cups_server)
+    return (1);
+
   /* Proxy CUPS daemon */
   cupsSetServer(proxy_cups_server);
 
@@ -546,15 +553,15 @@ set_default_printer_on_proxy(const char *printer) {
   if (cupsLastError() > IPP_STATUS_OK_EVENTS_COMPLETE) {
     debug_printf("ERROR: Failed setting proxy CUPS default printer to %': %s\n",
 		 printer, cupsLastErrorString());
-    return 0 ;
+    return (0);
   }
   debug_printf("Successfully set proxy CUPS default printer to %s\n",
 	       printer);
-  return 1;
+  return (1);
 }
 
 
-/* Remobve a queue from the proxy, so we can reflect queue removal on
+/* Remove a queue from the proxy, so we can reflect queue removal on
    the system's CUPS */
 static int
 remove_queue_from_proxy (const char *name)
@@ -568,11 +575,15 @@ remove_queue_from_proxy (const char *name)
   if (terminating)
     return (1);
   
+  debug_printf("Removing proxy CUPS queue %s.\n", name);
+
+  if (!proxy_cups_server)
+    return (1);
+
   /* Proxy CUPS daemon */
   cupsSetServer(proxy_cups_server);
 
   /* Remove the CUPS queue */
-  debug_printf("Removing proxy CUPS queue %s.\n", name);
   request = ippNewRequest(CUPS_DELETE_PRINTER);
 
   /* Printer URI: ipp://localhost/printers/<queue name> */
@@ -769,6 +780,9 @@ clone_system_queue_to_proxy (cups_dest_t *dest)
     }
   }
 
+  if (!proxy_cups_server)
+    return (1);
+
   /* Proxy CUPS daemon */
   cupsSetServer(proxy_cups_server);
 
@@ -861,13 +875,13 @@ clone_system_queue_to_proxy (cups_dest_t *dest)
    loop but instead, we call this function again and again, once for
    each queue, via g_timeout_add() with a zero-second timeout. This
    way other events in the main loop can stop the process after any
-   queue, especially a new update run can start when the previpus one
+   queue, especially a new update run can start when the previous one
    did not finish yet. This assures quick updating of the most
    important (the permanent queues, see below) queues which are done
    in the beginning of the update run.
 
    We also do not go through all printers as they appear in the list, but
-   instead, run through gthe list twice, once doing the permanent queues
+   instead, run through the list twice, once doing the permanent queues
    and once the discovered printers which let CUPS create a temporary
    queue on-demand.
 
@@ -971,18 +985,19 @@ update_proxy_printers (gpointer user_data)
 
   /* Check whether one of the printers on the system's CUPS has disappeared
      compared to the current state of the proxy */
-  for (pname = (const char *)cupsArrayFirst(proxy_printers);
-       pname;
-       pname = (const char *)cupsArrayNext(proxy_printers)) {
-    if (terminating)
-      return (FALSE);
-    if (!cupsGetDest(pname, NULL,
-		     system_printers->num_dests, system_printers->dests)) {
-      debug_printf("Queue %s disappeared on the system, removing it from proxy.\n", pname);
-      if (!remove_queue_from_proxy(pname))
-	debug_printf("Could not remove queue %s from proxy!\n", pname);
+  if (proxy_cups_server)
+    for (pname = (const char *)cupsArrayFirst(proxy_printers);
+	 pname;
+	 pname = (const char *)cupsArrayNext(proxy_printers)) {
+      if (terminating)
+	return (FALSE);
+      if (!cupsGetDest(pname, NULL,
+		       system_printers->num_dests, system_printers->dests)) {
+	debug_printf("Queue %s disappeared on the system, removing it from proxy.\n", pname);
+	if (!remove_queue_from_proxy(pname))
+	  debug_printf("Could not remove queue %s from proxy!\n", pname);
+      }
     }
-  }
 
   /* Schedule the update for the system's queues */
   debug_printf("Cloning queues from the system to the proxy.\n");
@@ -1633,11 +1648,16 @@ int main(int argc, char *argv[]) {
 	}
       }
   }
-  if (proxy_cups_server == NULL || system_cups_server == NULL) {
+  if (system_cups_server == NULL) {
     /* Less than 2 CUPS daemons specified */
-    fprintf(stderr,
-	    "Both a proxy cupsd and a system cupsd need to be specified.\n\n");
-    goto help;
+    if (proxy_cups_server == NULL) {
+      fprintf(stderr,
+	      "Both a proxy cupsd and a system cupsd need to be specified (or at least a system cupsd for a dry run).\n\n");
+      goto help;
+    } else {
+      system_cups_server = proxy_cups_server;
+      proxy_cups_server = NULL;
+    }
   }
   
   debug_printf("cups-proxyd version " VERSION " starting.\n");
@@ -1665,15 +1685,18 @@ int main(int argc, char *argv[]) {
 
   /* Wait for both CUPS daemons to start */
   debug_printf("Check whether both CUPS daemons are running.\n");
-  while (http_connect_proxy() == NULL)
-    sleep(1);
+  if (proxy_cups_server)
+    while (http_connect_proxy() == NULL)
+      sleep(1);
   while (http_connect_system() == NULL)
     sleep(1);
-  http_close_proxy();
+  if (proxy_cups_server)
+    http_close_proxy();
   http_close_system();
 
   /* Create list of print queues on proxy CUPS daemon */
-  proxy_printers = get_proxy_printers();
+  if (proxy_cups_server)
+    proxy_printers = get_proxy_printers();
 
   /* Redirect SIGINT and SIGTERM so that we do a proper shutdown */
 #ifdef HAVE_SIGSET /* Use System V signals over POSIX to avoid bugs */
@@ -1766,10 +1789,12 @@ fail:
   avahi_shutdown();
 
   /* Disconnect from CUPS daemons */
-  http_close_proxy();
+  if (proxy_cups_server)
+    http_close_proxy();
   http_close_system();
 
-  free(proxy_cups_server);
+  if (proxy_cups_server)
+    free(proxy_cups_server);
   free(system_cups_server);
   
   /* Close log file if we have one */
@@ -1782,10 +1807,12 @@ fail:
 
   fprintf(stderr,
 	  "cups-proxyd version " VERSION "\n\n"
-	  "Usage: cups-proxyd <proxy_cupsd> <system_cupsd> [options]\n"
+	  "Usage: cups-proxyd [<proxy_cupsd>] <system_cupsd> [options]\n"
 	  "\n"
 	  "<proxy_cupsd>:            The CUPS daemon being the proxy, which receives\n"
-	  "                          the print jobs of the clients.\n"
+	  "                          the print jobs of the clients. If left out, we get\n"
+	  "                          into dry-run mode. All appearing and disappearing\n"
+	  "                          printers for the system's CUPS get logged.\n"
 	  "<system_cupsd>:           The system's CUPS daemon, which is protected by\n"
 	  "                          the proxy.\n"
 	  "\n"
