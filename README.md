@@ -242,7 +242,6 @@ Call for testing:
 Printing with Snaps:
 
 * [Printing and managing printers from your Snap](https://forum.snapcraft.io/t/printing-and-managing-printers-from-your-snap/)
-* [“cups” interface merged into snapd - Additional steps to complete](https://forum.snapcraft.io/t/cups-interface-merged-into-snapd-additional-steps-to-complete/)
 
 The development of this Snap is discussed on the Snapcraft forum:
 
@@ -295,7 +294,7 @@ Snapping of [ipp-usb](https://github.com/OpenPrinting/ipp-usb)
 
 Requests for auto-connection to interfaces
 
-* [Request: CUPS Snap to use the `cups-socket-directory` attribute and auto-connection of any Snap’s “cups” plug to the “cups” slot of the CUPS Snap](https://forum.snapcraft.io/t/request-cups-snap-to-use-the-cups-socket-directory-attribute-and-auto-connection-of-any-snaps-cups-plug-to-the-cups-slot-of-the-cups-snap/)
+* [Request: CUPS Snap to use the `cups-socket-directory` attribute and auto-connection of any Snap’s “cups” plug to the “cups” slot of the CUPS Snap (accepted)](https://forum.snapcraft.io/t/request-cups-snap-to-use-the-cups-socket-directory-attribute-and-auto-connection-of-any-snaps-cups-plug-to-the-cups-slot-of-the-cups-snap/)
 * [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:cups-control and also of the network-manager-observe interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
 * [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
 * [Request: Printing Stack Snap auto connection to avahi-control, raw-usb, and home interfaces (DEPRECATED)](https://forum.snapcraft.io/t/request-printing-stack-snap-auto-connection-to-avahi-control-raw-usb-and-home-interfaces)
