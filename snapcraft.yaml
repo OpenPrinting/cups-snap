@@ -472,6 +472,13 @@ parts:
   cups-proxyd:
     plugin: make
     source: cups-proxyd
+    override-build: |
+      set -eux
+      # We do "make clean" here that we do not accidentally use
+      # binaries manually built in the source tree for development and
+      # copied into a local Snap build process
+      make clean
+      snapcraftctl build
     build-packages:
       - gcc
       - libglib2.0-dev
