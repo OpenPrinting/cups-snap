@@ -1651,17 +1651,14 @@ int main(int argc, char *argv[]) {
   if (system_cups_server == NULL) {
     /* Less than 2 CUPS daemons specified */
     if (proxy_cups_server == NULL) {
-      fprintf(stderr,
-	      "Both a proxy cupsd and a system cupsd need to be specified (or at least a system cupsd for a dry run).\n\n");
+      debug_printf("Both a proxy cupsd and a system cupsd need to be specified (or at least a system cupsd for a dry run).\n\n");
       goto help;
     } else {
       system_cups_server = proxy_cups_server;
       proxy_cups_server = NULL;
     }
   }
-  
-  debug_printf("cups-proxyd version " VERSION " starting.\n");
-  
+
   /* Set the paths of the log files */
   if (logdir[0] == '\0')
     strncpy(logdir, DEFAULT_LOGDIR, sizeof(logdir) - 1);
@@ -1682,6 +1679,11 @@ int main(int argc, char *argv[]) {
     start_debug_logging();
 
   debug_printf("main() in THREAD %ld\n", pthread_self());
+
+  debug_printf("System CUPS: %s\n", system_cups_server);
+  debug_printf("Proxy CUPS: %s\n", proxy_cups_server);
+
+  debug_printf("cups-proxyd version " VERSION " starting.\n");
 
   /* Wait for both CUPS daemons to start */
   debug_printf("Check whether both CUPS daemons are running.\n");
