@@ -5,6 +5,10 @@ description: Complete printing environment in a snap
 confinement: strict
 adopt-info: cups
 
+# We need snapd 2.55 or later to have the needed support for the
+# `cups` interface in snapd
+assumes: [snapd2.55]
+
 # Only build on the architectures supported
 architectures:
   - build-on: amd64
