@@ -6,14 +6,18 @@ Complete CUPS printing stack in a Snap
 
 [All from OpenPrinting in the Snap Store](https://snapcraft.io/search?q=OpenPrinting)
 
+[Snapping applications which print](https://forum.snapcraft.io/t/new-interface-cups-for-all-snaps-which-print/)
+
+
 ## Introduction
 
 This is a complete printing stack in a Snap. It contains not only CUPS but also cups-filters, Ghostscript, and Poppler (the two latter as PostScript and PDF interpreters). This is everything (except printer-model-specific drivers) which is needed for printing.
 
-This Snap is designed for the following two use cases:
+This Snap is designed for the following three use cases:
 
 1. Providing a printing stack for a purely Snap-based operating system, like Ubuntu Core.
 2. Providing a printing stack for a classic Linux system, installing the Snap instead of the system's usual printing packages. It is planned that Ubuntu Desktop switches over to use CUPS from this Snap.
+3. Being a proxy/firewall between application Snaps which print and the system's classically installed (DEB, RPM, ...) CUPS, to block administrative CUPS requests.
 
 Note that this Snap is still under development and therefore there are probably still many bugs.
 
@@ -22,7 +26,7 @@ Note that this Snap is still under development and therefore there are probably 
 
 The CUPS Snap works on both classic systems (standard Linux distributions like Ubuntu Desktop) and purely snap-based systems (like Ubuntu Core).
 
-If on your classic system there is already CUPS running, the CUPS Snap's cups-daemon works as a proxy to protect the system's CUPS daemon against adminstrative requests from applications from the Snap Store (proxy mode). For this the CUPS Snap will get automatically installed as soon as a Snap which prints is installed from the Snap Store. Then it does it s job fully automatically without any configuration (like creating queues) needed by the user.
+If on your classic system there is already CUPS running, the CUPS Snap's cups-daemon works as a proxy to protect the system's CUPS daemon against adminstrative requests from applications from the Snap Store (proxy mode). For this the CUPS Snap will get automatically installed as soon as a Snap which prints is installed from the Snap Store. Then it does its job fully automatically without any configuration (like creating queues) needed by the user.
 
 For developemnt purposes the CUPS Snap's CUPS daemon can also be run as an independent second daemon in parallel to the system's CUPS, on an alternative port and domain socket (parallel mode). Note that running two independent CUPS instances on one system is not recommended on production systems. It is error-prone and confusing for users. This mode is also not well tested. Disable or remove your system's CUPS if you want to use the Snap's CUPS as your standard CUPS.
 
@@ -241,11 +245,12 @@ Call for testing:
 
 Printing with Snaps:
 
+* [New interface: “cups” for all Snaps which print](https://forum.snapcraft.io/t/new-interface-cups-for-all-snaps-which-print/)
 * [Printing and managing printers from your Snap](https://forum.snapcraft.io/t/printing-and-managing-printers-from-your-snap/)
 
 The development of this Snap is discussed on the Snapcraft forum:
 
-* [“cups” interface merged into snapd - Additional steps to complete](https://forum.snapcraft.io/t/cups-interface-merged-into-snapd-additional-steps-to-complete/)
+* [“cups” interface merged into snapd - Additional steps to complete (solved)](https://forum.snapcraft.io/t/cups-interface-merged-into-snapd-additional-steps-to-complete/)
 * [Handling of the “cups” plug by snapd, especially auto-connection (How we came to the proxy mode of the CUPS Snap, solved)](https://forum.snapcraft.io/t/handling-of-the-cups-plug-by-snapd-especially-auto-connection/)
 * [CUPS Snap: Needs fontconfig for text filter, get “Fontconfig error: Cannot load default config file”](https://forum.snapcraft.io/t/cups-snap-needs-fontconfig-for-text-filter-get-fontconfig-error-cannot-load-default-config-file/)
 * [General development](https://forum.snapcraft.io/t/snapping-cups-printing-stack-avahi-support-system-users-groups/)
@@ -263,7 +268,7 @@ Related topics on the forum:
 * [Hardware-associated snaps - Snap Store search by hardware signature](https://forum.snapcraft.io/t/hardware-associated-snaps-snap-store-search-by-hardware-signature)
 * [User authentication in snapd (pam mediation)](https://forum.snapcraft.io/t/user-authentication-in-snapd-pam-mediation)
 
-Getting the snap into the store:
+Getting the Snap into the store:
 
 * [Call for testing: OpenPrinting’s printing-stack-snap (Printing in a Snap) (DEPRECATED)](https://forum.snapcraft.io/t/call-for-testing-openprintings-printing-stack-snap-printing-in-a-snap/)
 * [Post a snap on behalf of OpenPrinting](https://forum.snapcraft.io/t/post-a-snap-on-behalf-of-openprinting/)
@@ -301,6 +306,7 @@ Requests for auto-connection to interfaces
 
 Links on other platforms:
 
+* [Pull request on snapd to fix detection if `cups` interface is connected (merged)](https://github.com/snapcore/snapd/pull/11616)
 * [Pull request on snapd for adding the `cups` interface printing always through CUPS Snap (merged)](https://github.com/snapcore/snapd/pull/10427)
 * [Pull request on snapd for adding a new exit code for `snapctl --is-connected` for cases when the peer is from the same snap (solved differently)](https://github.com/snapcore/snapd/pull/10024)
 * [Pull request on snapd for making the `cups` interface implicit on classic (dropped)](https://github.com/snapcore/snapd/pull/10023)
