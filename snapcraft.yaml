@@ -7,8 +7,7 @@ adopt-info: cups
 
 # We need snapd 2.55 or later to have the needed support for the
 # `cups` interface in snapd
-#assumes: [snapd2.55]
-# Will be re-activated when snapd 2.55 REALLY makes it into stable
+assumes: [snapd2.55]
 
 # Only build on the architectures supported
 architectures:
