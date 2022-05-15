@@ -397,6 +397,7 @@ parts:
       - libavahi-glib-dev
       - librsvg2-bin
       - liblouis-dev
+      - libexif-dev
     stage-packages:
       - poppler-utils
       - libpoppler-cpp0v5
@@ -413,6 +414,7 @@ parts:
       - libsasl2-2
       - libwind0-heimdal
       - libdb5.3
+      - libexif12
       - fonts-freefont-ttf
       - fonts-arphic-uming
       - fontconfig-config
