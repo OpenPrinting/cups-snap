@@ -328,7 +328,7 @@ parts:
       - --prefix=/
       - --without-x
       - --disable-gtk
-      - --with-drivers=pdfwrite,ps2write,cups,pwgraster,pxlmono,pxlcolor
+      - --with-drivers=pdfwrite,pdfimage8,pdfimage24,pdfimage32,ps2write,cups,pwgraster,appleraster,urf,PCLm,PCLm8,pxlmono,pxlcolor
       - --enable-cups
       - --enable-freetype
       - --without-tesseract
