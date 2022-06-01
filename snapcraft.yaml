@@ -50,16 +50,10 @@ plugs:
     interface: system-files
     read:
       - /etc/cups
-  # Alias name for the utilities to plug cups-control while we also have a
-  # slot named cups-control. This plug is needed especially so that the
-  # utilities included with this Snap can also do admin tasks on a CUPS
-  # daemon which is not from this Snap
-  cups-internal:
-    interface: cups-control
 
 slots:
   # Provide the cups-control and cups slots for other snaps to connect to
-  cups-control:
+  cups-server:
     interface: cups-control
   cups:
     interface: cups
@@ -72,83 +66,83 @@ apps:
     reload-command: scripts/reload-cupsd
     restart-condition: always
     daemon: simple
-    plugs: [network, network-bind, avahi-control, raw-usb, etc-cups]
+    plugs: [network, network-bind, avahi-control, raw-usb, etc-cups, cups-control]
   cups-browsed:
     command: scripts/run-cups-browsed
     stop-command: scripts/stop-cups-browsed
     reload-command: scripts/reload-cups-browsed
     restart-condition: always
     daemon: simple
-    plugs: [network, network-bind, network-manager-observe, avahi-control, cups-internal]
+    plugs: [network, network-bind, network-manager-observe, avahi-control]
   lpinfo:
     command: scripts/run-util sbin/lpinfo
-    plugs: [network, cups-internal]
+    plugs: [network]
   lpadmin:
     command: scripts/run-util sbin/lpadmin
-    plugs: [network, avahi-control, home, cups-internal]
+    plugs: [network, avahi-control, home]
   lpstat:
     command: scripts/run-util bin/lpstat
-    plugs: [network, avahi-control, cups-internal]
+    plugs: [network, avahi-control]
   lpq:
     command: scripts/run-util bin/lpq
-    plugs: [network, cups-internal]
+    plugs: [network]
   lpc:
     command: scripts/run-util sbin/lpc
-    plugs: [network, cups-internal]
+    plugs: [network]
   lpoptions:
     command: scripts/run-util bin/lpoptions
-    plugs: [network, home, cups-internal]
+    plugs: [network, home]
   lp:
     command: scripts/run-util bin/lp
-    plugs: [network, home, cups-internal]
+    plugs: [network, home]
   lpr:
     command: scripts/run-util bin/lpr
-    plugs: [network, home, cups-internal]
+    plugs: [network, home]
   cancel:
     command: scripts/run-util bin/cancel
-    plugs: [network, cups-internal]
+    plugs: [network]
   lprm:
     command: scripts/run-util bin/lprm
-    plugs: [network, cups-internal]
+    plugs: [network]
   cupsenable:
     command: scripts/run-util sbin/cupsenable
-    plugs: [network, cups-internal]
+    plugs: [network]
   cupsdisable:
     command: scripts/run-util sbin/cupsdisable
-    plugs: [network, cups-internal]
+    plugs: [network]
   cupsaccept:
     command: scripts/run-util sbin/cupsaccept
-    plugs: [network, cups-internal]
+    plugs: [network]
   cupsreject:
     command: scripts/run-util sbin/cupsreject
-    plugs: [network, cups-internal]
+    plugs: [network]
   accept:
     command: scripts/run-util sbin/cupsaccept
-    plugs: [network, cups-internal]
+    plugs: [network]
   reject:
     command: scripts/run-util sbin/cupsreject
-    plugs: [network, cups-internal]
+    plugs: [network]
   cupsctl:
     command: scripts/run-util sbin/cupsctl
-    plugs: [network, cups-internal]
+    plugs: [network]
   cupsfilter:
     command: scripts/run-util sbin/cupsfilter
-    plugs: [network, home, cups-internal]
+    plugs: [network, home]
   cupstestppd:
     command: scripts/run-util bin/cupstestppd
-    plugs: [network, home, cups-internal]
+    plugs: [network, home]
   ipptool:
     command: scripts/run-util bin/ipptool
-    plugs: [network, avahi-control, home, cups-internal]
+    plugs: [network, avahi-control, home]
   ippfind:
     command: scripts/run-util bin/ippfind
-    plugs: [network, avahi-control, cups-internal]
+    plugs: [network, avahi-control]
   driverless:
     command: scripts/run-util bin/driverless
-    plugs: [network, avahi-control, cups-internal]
+    plugs: [network, avahi-control]
   ippeveprinter:
     command: scripts/run-util bin/ippeveprinter
-    plugs: [network, network-bind, avahi-control, home, raw-usb, cups-internal]
+    plugs: [network, network-bind, avahi-control, home, raw-usb]
   gs:
     command: bin/gs
     plugs: [home, etc-cups]
