@@ -1763,6 +1763,9 @@ int main(int argc, char *argv[]) {
 		      G_CALLBACK (on_printer_modified), NULL);
   }
 
+  /* Schedule first update to sync with current state */
+  schedule_proxy_update();
+
   /* Run the main loop */
   g_main_loop_run (gmainloop);
 
