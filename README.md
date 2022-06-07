@@ -245,8 +245,13 @@ Call for testing:
 
 Printing with Snaps:
 
-* [New interface: “cups” for all Snaps which print](https://forum.snapcraft.io/t/new-interface-cups-for-all-snaps-which-print/)
+* [New interface: “cups” for all Snaps which print (How to use, how it exactly works)](https://forum.snapcraft.io/t/new-interface-cups-for-all-snaps-which-print/)
 * [Printing and managing printers from your Snap](https://forum.snapcraft.io/t/printing-and-managing-printers-from-your-snap/)
+
+Documentation requests:
+
+* [The "cups" interface, by Graham Morrison](https://forum.snapcraft.io/t/the-cups-interface/)
+* [My original documentation request for the "cups" interface](https://forum.snapcraft.io/t/the-cups-interface/)
 
 The development of this Snap is discussed on the Snapcraft forum:
 
@@ -299,6 +304,7 @@ Snapping of [ipp-usb](https://github.com/OpenPrinting/ipp-usb)
 
 Requests for auto-connection to interfaces
 
+* [Request: CUPS Snap auto connection to "cups-control" interface](https://forum.snapcraft.io/t/request-cups-snap-auto-connection-to-cups-control-interface/)
 * [Request: CUPS Snap to use the `cups-socket-directory` attribute and auto-connection of any Snap’s “cups” plug to the “cups” slot of the CUPS Snap (accepted)](https://forum.snapcraft.io/t/request-cups-snap-to-use-the-cups-socket-directory-attribute-and-auto-connection-of-any-snaps-cups-plug-to-the-cups-slot-of-the-cups-snap/)
 * [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:cups-control and also of the network-manager-observe interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
 * [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
@@ -306,6 +312,7 @@ Requests for auto-connection to interfaces
 
 Links on other platforms:
 
+* [Pull request on cupsd to fix CUPS D-Bus service access via "cups-control" interface](https://github.com/snapcore/snapd/pull/11843)
 * [Pull request on snapd to fix detection if `cups` interface is connected (merged)](https://github.com/snapcore/snapd/pull/11616)
 * [Pull request on snapd for adding the `cups` interface printing always through CUPS Snap (merged)](https://github.com/snapcore/snapd/pull/10427)
 * [Pull request on snapd for adding a new exit code for `snapctl --is-connected` for cases when the peer is from the same snap (solved differently)](https://github.com/snapcore/snapd/pull/10024)
