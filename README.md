@@ -304,7 +304,7 @@ Snapping of [ipp-usb](https://github.com/OpenPrinting/ipp-usb)
 
 Requests for auto-connection to interfaces
 
-* [Request: CUPS Snap auto connection to "cups-control" interface](https://forum.snapcraft.io/t/request-cups-snap-auto-connection-to-cups-control-interface/)
+* [Request: CUPS Snap auto connection to "cups-control" interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-auto-connection-to-cups-control-interface/)
 * [Request: CUPS Snap to use the `cups-socket-directory` attribute and auto-connection of any Snap’s “cups” plug to the “cups” slot of the CUPS Snap (accepted)](https://forum.snapcraft.io/t/request-cups-snap-to-use-the-cups-socket-directory-attribute-and-auto-connection-of-any-snaps-cups-plug-to-the-cups-slot-of-the-cups-snap/)
 * [Request: CUPS Snap (“cups”) auto connection to of cups:cups-control to cups:cups-control and also of the network-manager-observe interface (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-of-cups-cups-control-to-cups-admin-and-also-of-the-network-manager-observe-interface/)
 * [Request: CUPS Snap (“cups”) auto connection to avahi-control, raw-usb, cups-control, and system-files interfaces (accepted)](https://forum.snapcraft.io/t/request-cups-snap-cups-auto-connection-to-avahi-control-raw-usb-cups-control-and-system-files-interfaces/)
