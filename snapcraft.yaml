@@ -203,7 +203,7 @@ parts:
       # Force channel: auto/devel/edge/stable
       CHANNEL=stable
       # Force package release number (integer) or "auto"
-      PACKAGERELEASE=2
+      PACKAGERELEASE=3
       # Previous stable and development version
       prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "amd64") | .version')"
       if [ -z "$prevstable" ]; then
@@ -355,6 +355,7 @@ parts:
   cups-filters:
     source: https://github.com/OpenPrinting/cups-filters.git
     source-type: git
+    source-commit: e496badbf23d4d4215b542d5e73f931c8d9bcf73
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
