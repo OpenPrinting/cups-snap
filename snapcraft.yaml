@@ -303,6 +303,10 @@ parts:
       - zlib1g-dev
     stage-packages:
       - libjpeg-turbo8
+    stage:
+      # The *.la file which gets installed by "make install" contains a
+      # wrong prefix, breaking parts of this Snap which use this library
+      - -lib/lib*.la
     prime:
       - -etc/fonts
       - -var
@@ -353,10 +357,124 @@ parts:
     organize:
       snap/cups/current/share: share
     after: [cups]
+  libcupsfilters:
+    source: https://github.com/OpenPrinting/libcupsfilters
+    source-type: git
+    plugin: autotools
+    autotools-configure-parameters:
+      - --prefix=/
+      - --exec-prefix=/
+      - --datadir=/share
+      - --datarootdir=/share
+      - --includedir=/include
+      - --disable-avahi
+      - --disable-mutool
+    build-packages:
+      - gettext
+      - autoconf
+      - automake
+      - autotools-dev
+      - pkg-config
+      - g++
+      - sharutils
+      - liblcms2-dev
+      - libpoppler-cpp-dev
+      - libpng-dev
+      - libjpeg-dev
+      - libtiff5-dev
+      - zlib1g-dev
+      - libfontconfig1-dev
+      - libdbus-1-dev
+      - libexif-dev
+    stage-packages:
+      - libpoppler-cpp0v5
+      - libjbig0
+      - liblcms2-2
+      - libnspr4
+      - libnss3
+      - libopenjp2-7
+      - libpoppler97
+      - libtiff5
+      - libwebp6
+      - libexif12
+    stage:
+      - -lib/lib*.la
+      # The *.la file which gets installed by "make install" contains a
+      # wrong prefix, breaking parts of this Snap which use this library
+    prime:
+      - -etc
+      - -var
+      - -include
+      - -lib/pkgconfig
+      - -share/man
+      - -share/doc
+      - -share/lintian
+      - -usr/share/man
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/lintian
+      - share/cups
+      - lib/lib*.so*
+      - lib/*/lib*.so*
+      - usr/lib/lib*.so*
+      - usr/lib/*/lib*.so*
+      - usr/lib/*/nss
+    after: [cups, qpdf, ghostscript]
+
+  libppd:
+    source: https://github.com/OpenPrinting/libppd
+    source-type: git
+    plugin: autotools
+    # We only need libppd itself
+    autotools-configure-parameters:
+      - --prefix=/
+      - --exec-prefix=/
+      - --datadir=/share
+      - --datarootdir=/share
+      - --includedir=/include
+      - --disable-mutool
+      - --disable-pdftocairo
+      - --disable-acroread
+      - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
+    build-environment:
+      # To find the libraries built in this Snap
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAPCRAFT_STAGE/usr/lib"
+      # We have to force-define the macros for the properties of the
+      # external executables here, as the tests do not work in the Snap
+      # build environment
+      - CFLAGS: "$CFLAGS -DHAVE_GHOSTSCRIPT_PS2WRITE -DHAVE_POPPLER_PDFTOPS_WITH_ORIGPAGESIZES -DHAVE_POPPLER_PDFTOPS_WITH_RESOLUTION"
+    build-packages:
+      - gettext
+      - autoconf
+      - automake
+      - autotools-dev
+      - pkg-config
+      - g++
+      - sharutils
+      - poppler-utils
+    prime:
+      - -etc
+      - -var
+      - -include
+      - -lib/pkgconfig
+      - -share/man
+      - -share/doc
+      - -share/lintian
+      - -usr/share/ppdc
+      - -usr/share/fonts
+      - -usr/share/man
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/lintian
+      - lib/lib*.so*
+      - lib/*/lib*.so*
+      - usr/lib/lib*.so*
+      - usr/lib/*/lib*.so*
+      - usr/lib/*/nss
+    after: [cups, ghostscript, libcupsfilters]
   cups-filters:
     source: https://github.com/OpenPrinting/cups-filters.git
     source-type: git
-    source-commit: e496badbf23d4d4215b542d5e73f931c8d9bcf73
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -365,10 +483,8 @@ parts:
       - --datarootdir=/share
       - --includedir=/include
       - --disable-mutool
-      - --without-rcdir
       - --disable-universal-cups-filter
       - --enable-individual-cups-filters
-      - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
     build-packages:
       - autoconf
       - autotools-dev
@@ -376,41 +492,15 @@ parts:
       - g++
       - sharutils
       - poppler-utils
-      - libglib2.0-dev
       - liblcms2-dev
-      - libldap2-dev
-      - libpoppler-private-dev
       - libpoppler-cpp-dev
-      - libjpeg-dev
-      - libpng-dev
-      - libtiff5-dev
-      - libijs-dev
       - zlib1g-dev
-      - libfontconfig1-dev
-      - libdbus-1-dev
       - libavahi-common-dev
       - libavahi-client-dev
-      - libavahi-glib-dev
-      - librsvg2-bin
-      - liblouis-dev
-      - libexif-dev
     stage-packages:
       - poppler-utils
       - libpoppler-cpp0v5
-      - libasn1-8-heimdal
-      - libavahi-glib1
-      - libgssapi3-heimdal
-      - libhcrypto4-heimdal
-      - libheimbase1-heimdal
-      - libheimntlm0-heimdal
-      - libhx509-5-heimdal
-      - libkrb5-26-heimdal
-      - libldap-2.4-2
-      - libroken18-heimdal
-      - libsasl2-2
-      - libwind0-heimdal
       - libdb5.3
-      - libexif12
       - fonts-freefont-ttf
       - fonts-arphic-uming
       - fontconfig-config
@@ -426,10 +516,58 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
-      - -lib/libcupsfilters.a
-      - -lib/libppd.a
-      - -lib/libfontembed.a
-    after: [cups, qpdf, ghostscript]
+    after: [cups, qpdf, ghostscript, libcupsfilters, libppd]
+  cups-browsed:
+    source: https://github.com/OpenPrinting/cups-browsed.git
+    source-type: git
+    plugin: autotools
+    autotools-configure-parameters:
+      - --prefix=/
+      - --exec-prefix=/
+      - --datadir=/share
+      - --datarootdir=/share
+      - --includedir=/include
+      - --without-rcdir
+    build-packages:
+      - autoconf
+      - autotools-dev
+      - pkg-config
+      - g++
+      - sharutils
+      - libglib2.0-dev
+      - libldap2-dev
+      - zlib1g-dev
+      - libdbus-1-dev
+      - libavahi-common-dev
+      - libavahi-client-dev
+      - libavahi-glib-dev
+    stage-packages:
+      - libasn1-8-heimdal
+      - libavahi-glib1
+      - libgssapi3-heimdal
+      - libhcrypto4-heimdal
+      - libheimbase1-heimdal
+      - libheimntlm0-heimdal
+      - libhx509-5-heimdal
+      - libkrb5-26-heimdal
+      - libldap-2.4-2
+      - libroken18-heimdal
+      - libsasl2-2
+      - libwind0-heimdal
+      - libdb5.3
+    organize:
+      var/snap/cups/common/etc: etc
+    prime:
+      - -var
+      - -include
+      - -share/man
+      - -share/doc
+      - -share/lintian
+      - -usr/share/man
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/lintian
+    after: [cups, libcupsfilters, libppd]
   utils:
     plugin: nil
     source: .
