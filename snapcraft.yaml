@@ -151,6 +151,7 @@ parts:
   snapd-glib:
     source: https://github.com/snapcore/snapd-glib
     source-type: git
+    source-depth: 1
     plugin: meson
     meson-parameters:
       - -Dprefix=/
@@ -177,7 +178,8 @@ parts:
   cups:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
-    source-tag: v2.4.2
+    source-tag: v2.4.4
+    source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -204,7 +206,7 @@ parts:
       # Force channel: auto/devel/edge/stable
       CHANNEL=stable
       # Force package release number (integer) or "auto"
-      PACKAGERELEASE=5
+      PACKAGERELEASE=1
       # Previous stable and development version
       prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "amd64") | .version')"
       if [ -z "$prevstable" ]; then
@@ -293,20 +295,28 @@ parts:
       - -usr/share/lintian
     after: [snapd-glib]
   qpdf:
-    source: https://github.com/qpdf/qpdf/releases/download/release-qpdf-10.6.3/qpdf-10.6.3.tar.gz
-    plugin: autotools
-    autotools-configure-parameters:
-      - --prefix=/
+    source: https://github.com/qpdf/qpdf/releases/download/v11.4.0/qpdf-11.4.0.tar.gz
+    plugin: cmake
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/
+      - -DCMAKE_BUILD_RPATH_USE_ORIGIN=1
+      - -DUSE_IMPLICIT_CRYPTO=0
+      - -DREQUIRE_CRYPTO_GNUTLS=1
+      - -DSHOW_FAILED_TEST_OUTPUT=1
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DQTEST_COLOR=0
     build-packages:
+      - cmake
       - g++
       - libjpeg-dev
       - zlib1g-dev
+      - libgnutls28-dev
     stage-packages:
       - libjpeg-turbo8
     stage:
       # The *.la file which gets installed by "make install" contains a
       # wrong prefix, breaking parts of this Snap which use this library
-      - -lib/lib*.la
+      - -usr/lib/lib*.la
     prime:
       - -etc/fonts
       - -var
@@ -319,9 +329,9 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
-      - -lib/libqpdf.a
+      - -usr/lib/libqpdf.a
   ghostscript:
-    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9561/ghostscript-9.56.1.tar.gz
+    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10011/ghostscript-10.01.1.tar.gz
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -360,6 +370,7 @@ parts:
   libcupsfilters:
     source: https://github.com/OpenPrinting/libcupsfilters
     source-type: git
+    source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -424,6 +435,7 @@ parts:
   libppd:
     source: https://github.com/OpenPrinting/libppd
     source-type: git
+    source-depth: 1
     plugin: autotools
     # We only need libppd itself
     autotools-configure-parameters:
@@ -475,6 +487,7 @@ parts:
   cups-filters:
     source: https://github.com/OpenPrinting/cups-filters.git
     source-type: git
+    source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -485,6 +498,9 @@ parts:
       - --disable-mutool
       - --disable-universal-cups-filter
       - --enable-individual-cups-filters
+    build-environment:
+      # To find the libraries built in this Snap
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAPCRAFT_STAGE/usr/lib"
     build-packages:
       - autoconf
       - autotools-dev
@@ -520,6 +536,7 @@ parts:
   cups-browsed:
     source: https://github.com/OpenPrinting/cups-browsed.git
     source-type: git
+    source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -528,6 +545,9 @@ parts:
       - --datarootdir=/share
       - --includedir=/include
       - --without-rcdir
+    build-environment:
+      # To find the libraries built in this Snap
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAPCRAFT_STAGE/usr/lib"
     build-packages:
       - autoconf
       - autotools-dev
