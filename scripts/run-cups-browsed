@@ -75,8 +75,9 @@ if  [ ! -e $SNAP_DATA/var/run/proxy-mode ]; then
 	# Edit the configuration file
 	perl -p -i \
 	     -e 's:^#\s*DebugLogging\s+file\s*$:DebugLogging file\n:;' \
-	     -e 's:^(#\s*)?BrowseRemoteProtocols\s+\.*\s*$:BrowseRemoteProtocols dnssd cups\n:;' \
+	     -e 's:^(#\s*)?BrowseRemoteProtocols\s+.*\s*$:BrowseRemoteProtocols dnssd cups\n:;' \
 	     -e 's:^#\s*CreateIPPPrinterQueues\s+All\s*$:CreateIPPPrinterQueues All\n:;' \
+	     -e 's:^(#\s*)?DebugLogFileSize\s+.*\s*$:DebugLogFileSize 30000\n:;' \
 	     $CONF
     fi
 
