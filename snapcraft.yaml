@@ -244,6 +244,17 @@ parts:
       # Set version and grade (channel)
       snapcraftctl set-version "$version"
       snapcraftctl set-grade "$grade"
+      # Regression in CUPS 2.4.4: Base-64-encoding, used to save
+      # certificates in files got broken, ending up with corrupted
+      # files not readable when loading them again and so the
+      # certificates of network printers not trusted when loaded from
+      # the file. So the first job prints (no certificate file yet,
+      # certificate loaded from printer) and every subsequent job does
+      # not print, as the printer's certificate does not match the one
+      # loaded from the file.
+      # The patch undoes the only change which happened on the
+      # encoding between 2.4.2 and 2.4.4 and so fixes the bug.
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/patches/fix-httpencode64-2.patch
       # Do the actual build task
       snapcraftctl build
     build-packages:
