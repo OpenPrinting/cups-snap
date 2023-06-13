@@ -148,33 +148,6 @@ apps:
     plugs: [home, etc-cups]
 
 parts:
-  snapd-glib:
-    source: https://github.com/snapcore/snapd-glib
-    source-type: git
-    source-depth: 1
-    plugin: meson
-    meson-parameters:
-      - -Dprefix=/
-      - -Dbuildtype=plain
-      - -Dintrospection=false
-      - -Ddocs=false
-      - -Dvala-bindings=false
-      - -Dqt-bindings=false
-      - -Dqml-bindings=false
-      - -Dsoup2=true
-    build-packages:
-      - libglib2.0-dev
-      - libjson-glib-dev
-      - libsoup2.4-dev
-    stage-packages:
-      - libicu66
-      - libjson-glib-1.0-0
-      - libsoup2.4-1
-      - libxml2
-    prime:
-      - -include
-      - -libexec
-      - -share
   cups:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
@@ -290,6 +263,8 @@ parts:
       - libavahi-common3
       - libavahi-client3
       - libpaper1
+      - libsnapd-glib1
+      - libapparmor1
     organize:
       var/snap/cups/common/etc: etc
     prime:
@@ -304,7 +279,6 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
-    after: [snapd-glib]
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/v11.4.0/qpdf-11.4.0.tar.gz
     plugin: cmake
