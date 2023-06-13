@@ -151,7 +151,7 @@ parts:
   cups:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
-    source-tag: v2.4.4
+    source-tag: v2.4.5
     source-depth: 1
     plugin: autotools
     autotools-configure-parameters:
@@ -179,7 +179,7 @@ parts:
       # Force channel: auto/devel/edge/stable
       CHANNEL=stable
       # Force package release number (integer) or "auto"
-      PACKAGERELEASE=2
+      PACKAGERELEASE=1
       # Previous stable and development version
       prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "amd64") | .version')"
       if [ -z "$prevstable" ]; then
@@ -217,17 +217,6 @@ parts:
       # Set version and grade (channel)
       snapcraftctl set-version "$version"
       snapcraftctl set-grade "$grade"
-      # Regression in CUPS 2.4.4: Base-64-encoding, used to save
-      # certificates in files got broken, ending up with corrupted
-      # files not readable when loading them again and so the
-      # certificates of network printers not trusted when loaded from
-      # the file. So the first job prints (no certificate file yet,
-      # certificate loaded from printer) and every subsequent job does
-      # not print, as the printer's certificate does not match the one
-      # loaded from the file.
-      # The patch undoes the only change which happened on the
-      # encoding between 2.4.2 and 2.4.4 and so fixes the bug.
-      patch -p1 < $SNAPCRAFT_PROJECT_DIR/patches/fix-httpencode64-2.patch
       # Do the actual build task
       snapcraftctl build
     build-packages:
