@@ -1,7 +1,7 @@
 name: cups
-base: core20 # The base snap is the execution environment for this snap
-summary: CUPS-based printing stack snap
-description: Complete printing environment in a snap
+base: core22 # The base Snap is the execution environment for this Snap
+summary: CUPS-based printing stack Snap
+description: Complete printing environment in a Snap
 confinement: strict
 adopt-info: cups
 
@@ -52,7 +52,7 @@ plugs:
       - /etc/cups
 
 slots:
-  # Provide the cups-control and cups slots for other snaps to connect to
+  # Provide the cups-control and cups slots for other Snaps to connect to
   cups-server:
     interface: cups-control
   cups:
@@ -157,6 +157,8 @@ parts:
     autotools-configure-parameters:
       - --prefix=/
       - --exec-prefix=/
+      # Prevent the libraries from being put into lib64
+      - --libdir=/lib
       - --datadir=/share
       - --datarootdir=/share
       - --includedir=/include
@@ -173,13 +175,15 @@ parts:
       # interface page.
       - --with-tls=gnutls
       #- --enable-debug-printfs
-    override-build: |
+    override-pull: |
       set -eux
+      # Do the actual pull task
+      craftctl default
       # Settings:
       # Force channel: auto/devel/edge/stable
       CHANNEL=stable
       # Force package release number (integer) or "auto"
-      PACKAGERELEASE=1
+      PACKAGERELEASE=2
       # Previous stable and development version
       prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "amd64") | .version')"
       if [ -z "$prevstable" ]; then
@@ -214,11 +218,9 @@ parts:
       else
           [ -n "$(echo $version | grep "+git")" ] && grade=devel || grade=stable
       fi
-      # Set version and grade (channel)
-      snapcraftctl set-version "$version"
-      snapcraftctl set-grade "$grade"
-      # Do the actual build task
-      snapcraftctl build
+      # Set version and grade
+      craftctl set version="$version"
+      craftctl set grade="$grade"
     build-packages:
       - git
       - sed
@@ -256,6 +258,10 @@ parts:
       - libapparmor1
     organize:
       var/snap/cups/common/etc: etc
+    stage:
+      # The *.la file which gets installed by "make install" contains a
+      # wrong prefix, breaking parts of this Snap which use this library
+      - -lib/lib*.la
     prime:
       - -etc/fonts
       - -var
@@ -268,6 +274,14 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
+      # Reported unused by snapcraft linter
+      - -lib/libcupsimage.*
+      - -usr/lib/*/libdconf.*
+      - -usr/lib/*/libicuio.*
+      - -usr/lib/*/libicutest.*
+      - -usr/lib/*/libicutu.*
+      - -usr/lib/*/libicui18n.*
+
   qpdf:
     source: https://github.com/qpdf/qpdf/releases/download/v11.4.0/qpdf-11.4.0.tar.gz
     plugin: cmake
@@ -304,6 +318,7 @@ parts:
       - -usr/share/doc-base
       - -usr/share/lintian
       - -usr/lib/libqpdf.a
+
   ghostscript:
     source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10011/ghostscript-10.01.1.tar.gz
     plugin: autotools
@@ -320,6 +335,9 @@ parts:
       - --with-cups-serverbin=/snap/cups/current/lib/cups
       - --with-cups-serverroot=/var/snap/cups/common/etc/cups
       - --with-cups-datadir=/snap/cups/current/share/cups
+    build-environment:
+      # To find the libraries built in this Snap
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
     stage-packages:
       - libpaper1
       - libfontconfig1
@@ -341,6 +359,7 @@ parts:
     organize:
       snap/cups/current/share: share
     after: [cups]
+
   libcupsfilters:
     source: https://github.com/OpenPrinting/libcupsfilters
     source-type: git
@@ -354,6 +373,9 @@ parts:
       - --includedir=/include
       - --disable-avahi
       - --disable-mutool
+    build-environment:
+      # To find the libraries built in this Snap
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
     build-packages:
       - gettext
       - autoconf
@@ -378,9 +400,9 @@ parts:
       - libnspr4
       - libnss3
       - libopenjp2-7
-      - libpoppler97
+      - libpoppler118
       - libtiff5
-      - libwebp6
+      - libwebp7
       - libexif12
     stage:
       - -lib/lib*.la
@@ -404,6 +426,8 @@ parts:
       - usr/lib/lib*.so*
       - usr/lib/*/lib*.so*
       - usr/lib/*/nss
+      # Reported unused by snapcraft linter
+      - -usr/lib/*/libssl3.*
     after: [cups, qpdf, ghostscript]
 
   libppd:
@@ -424,7 +448,7 @@ parts:
       - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAPCRAFT_STAGE/usr/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
       # We have to force-define the macros for the properties of the
       # external executables here, as the tests do not work in the Snap
       # build environment
@@ -438,6 +462,10 @@ parts:
       - g++
       - sharutils
       - poppler-utils
+    stage:
+      # The *.la file which gets installed by "make install" contains a
+      # wrong prefix, breaking parts of this Snap which use this library
+      - -lib/lib*.la
     prime:
       - -etc
       - -var
@@ -458,6 +486,7 @@ parts:
       - usr/lib/*/lib*.so*
       - usr/lib/*/nss
     after: [cups, ghostscript, libcupsfilters]
+
   cups-filters:
     source: https://github.com/OpenPrinting/cups-filters.git
     source-type: git
@@ -474,7 +503,7 @@ parts:
       - --enable-individual-cups-filters
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAPCRAFT_STAGE/usr/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
     build-packages:
       - autoconf
       - autotools-dev
@@ -506,7 +535,10 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
+      # Reported unused by snapcraft linter
+      - -usr/lib/*/libssl3.*
     after: [cups, qpdf, ghostscript, libcupsfilters, libppd]
+
   cups-browsed:
     source: https://github.com/OpenPrinting/cups-browsed.git
     source-type: git
@@ -521,7 +553,7 @@ parts:
       - --without-rcdir
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAPCRAFT_STAGE/usr/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
     build-packages:
       - autoconf
       - autotools-dev
@@ -536,18 +568,9 @@ parts:
       - libavahi-client-dev
       - libavahi-glib-dev
     stage-packages:
-      - libasn1-8-heimdal
       - libavahi-glib1
-      - libgssapi3-heimdal
-      - libhcrypto4-heimdal
-      - libheimbase1-heimdal
-      - libheimntlm0-heimdal
-      - libhx509-5-heimdal
-      - libkrb5-26-heimdal
-      - libldap-2.4-2
-      - libroken18-heimdal
+      - libldap-2.5-0
       - libsasl2-2
-      - libwind0-heimdal
       - libdb5.3
     organize:
       var/snap/cups/common/etc: etc
@@ -562,6 +585,7 @@ parts:
       - -usr/share/doc-base
       - -usr/share/lintian
     after: [cups, libcupsfilters, libppd]
+
   utils:
     plugin: nil
     source: .
@@ -570,9 +594,6 @@ parts:
       - sed
       - grep
       - libbinutils
-      - libmpfr6
-      - libisl22
-      - libmpc3
     organize:
       usr/bin/: bin/
       usr/lib/: lib/
@@ -586,13 +607,17 @@ parts:
       - -share/man
       - -share/doc
       - -share/lintian
+      # Reported unused by snapcraft linter
+      - -lib/*/libopcodes-*
+      - -lib/*/libbfd-*
+
   scripts:
     plugin: dump
     source: scripts/
     override-build: |
       set -eux
       gcc -o port-occupied port-occupied.c
-      snapcraftctl build
+      craftctl default
     organize:
       run-cupsd: scripts/run-cupsd
       stop-cupsd: scripts/stop-cupsd
@@ -607,6 +632,7 @@ parts:
     build-packages:
       - gcc
     after: [cups, cups-filters, utils]
+
   cups-proxyd:
     plugin: make
     source: cups-proxyd
@@ -616,7 +642,10 @@ parts:
       # binaries manually built in the source tree for development and
       # copied into a local Snap build process
       make clean
-      snapcraftctl build
+      craftctl default
+    build-environment:
+      # To find the libraries built in this Snap
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
     build-packages:
       - gcc
       - libglib2.0-dev
