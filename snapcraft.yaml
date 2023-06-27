@@ -221,6 +221,8 @@ parts:
       # Set version and grade
       craftctl set version="$version"
       craftctl set grade="$grade"
+      # Patch to use snapctl with the slot name "cups-server" for Snap mediation
+      patch -p1 < $CRAFT_PROJECT_DIR/patches/use-snapctl-with-slot-cups-server.patch
     build-packages:
       - git
       - sed
