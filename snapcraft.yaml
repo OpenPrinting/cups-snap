@@ -50,10 +50,18 @@ plugs:
     interface: system-files
     read:
       - /etc/cups
+  # Alias name for our cupsd to plug the host system's cups-control to
+  # access the host system's cupsd in proxy mode while we also have a
+  # slot named cups-control for snapped printer setup tools to able to
+  # manage our cupsd. XXX The plug also allows the utilities included with
+  # this Snap to do admin tasks on a CUPS daemon which is not from
+  # this Snap.
+  cups-host:
+    interface: cups-control
 
 slots:
   # Provide the cups-control and cups slots for other Snaps to connect to
-  cups-server:
+  cups-control:
     interface: cups-control
   cups:
     interface: cups
@@ -66,7 +74,7 @@ apps:
     reload-command: scripts/reload-cupsd
     restart-condition: always
     daemon: simple
-    plugs: [network, network-bind, avahi-control, raw-usb, etc-cups, cups-control]
+    plugs: [network, network-bind, avahi-control, raw-usb, etc-cups, cups-host]
   cups-browsed:
     command: scripts/run-cups-browsed
     stop-command: scripts/stop-cups-browsed
@@ -76,55 +84,55 @@ apps:
     plugs: [network, network-bind, network-manager-observe, avahi-control]
   lpinfo:
     command: scripts/run-util sbin/lpinfo
-    plugs: [network]
+    plugs: [network, cups-host]
   lpadmin:
     command: scripts/run-util sbin/lpadmin
-    plugs: [network, avahi-control, home]
+    plugs: [network, avahi-control, home, cups-host]
   lpstat:
     command: scripts/run-util bin/lpstat
-    plugs: [network, avahi-control]
+    plugs: [network, avahi-control, cups-host]
   lpq:
     command: scripts/run-util bin/lpq
-    plugs: [network]
+    plugs: [network, cups-host]
   lpc:
     command: scripts/run-util sbin/lpc
-    plugs: [network]
+    plugs: [network, cups-host]
   lpoptions:
     command: scripts/run-util bin/lpoptions
-    plugs: [network, home]
+    plugs: [network, home, cups-host]
   lp:
     command: scripts/run-util bin/lp
-    plugs: [network, home]
+    plugs: [network, home, cups-host]
   lpr:
     command: scripts/run-util bin/lpr
-    plugs: [network, home]
+    plugs: [network, home, cups-host]
   cancel:
     command: scripts/run-util bin/cancel
-    plugs: [network]
+    plugs: [network, cups-host]
   lprm:
     command: scripts/run-util bin/lprm
-    plugs: [network]
+    plugs: [network, cups-host]
   cupsenable:
     command: scripts/run-util sbin/cupsenable
-    plugs: [network]
+    plugs: [network, cups-host]
   cupsdisable:
     command: scripts/run-util sbin/cupsdisable
-    plugs: [network]
+    plugs: [network, cups-host]
   cupsaccept:
     command: scripts/run-util sbin/cupsaccept
-    plugs: [network]
+    plugs: [network, cups-host]
   cupsreject:
     command: scripts/run-util sbin/cupsreject
-    plugs: [network]
+    plugs: [network, cups-host]
   accept:
     command: scripts/run-util sbin/cupsaccept
-    plugs: [network]
+    plugs: [network, cups-host]
   reject:
     command: scripts/run-util sbin/cupsreject
-    plugs: [network]
+    plugs: [network, cups-host]
   cupsctl:
     command: scripts/run-util sbin/cupsctl
-    plugs: [network]
+    plugs: [network, cups-host]
   cupsfilter:
     command: scripts/run-util sbin/cupsfilter
     plugs: [network, home]
@@ -222,7 +230,7 @@ parts:
       craftctl set version="$version"
       craftctl set grade="$grade"
       # Patch to use snapctl with the slot name "cups-server" for Snap mediation
-      patch -p1 < $CRAFT_PROJECT_DIR/patches/use-snapctl-with-slot-cups-server.patch
+      #patch -p1 < $CRAFT_PROJECT_DIR/patches/use-snapctl-with-slot-cups-server.patch
     build-packages:
       - git
       - sed
