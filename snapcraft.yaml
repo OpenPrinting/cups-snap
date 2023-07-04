@@ -40,22 +40,22 @@ environment:
   CUPS_SERVERBIN: /snap/cups/current/lib/cups
 
 plugs:
-  # This interface is needed for checking whether CUPS in this
-  # Snap should run as a proxy for the system's CUPS or whether
-  # this Snap's CUPS is the standard CUPS for the system.
-  # This interface also serves for scripts which do a migration
-  # of the configuration and print queues of a classically
-  # installed CUPS when it is replaced by this CUPS Snap
+  # This interface is needed for checking whether CUPS in this Snap
+  # should run as a proxy for the system's CUPS or whether this Snap's
+  # CUPS is the standard CUPS for the system.  This interface also
+  # serves for scripts which do a migration of the configuration and
+  # print queues of a classically installed CUPS when it is replaced
+  # by this CUPS Snap
   etc-cups:
     interface: system-files
     read:
       - /etc/cups
   # Alias name for our cupsd to plug the host system's cups-control to
   # access the host system's cupsd in proxy mode while we also have a
-  # slot named cups-control for snapped printer setup tools to able to
-  # manage our cupsd. XXX The plug also allows the utilities included with
-  # this Snap to do admin tasks on a CUPS daemon which is not from
-  # this Snap.
+  # slot named cups-control for snapped printer setup tools to be able
+  # to manage our cupsd. The plug also allows the utilities included
+  # with this Snap to do admin tasks on a CUPS daemon which is not
+  # from this Snap.
   cups-host:
     interface: cups-control
 
