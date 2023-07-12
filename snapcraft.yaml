@@ -191,7 +191,7 @@ parts:
       # Force channel: auto/devel/edge/stable
       CHANNEL=stable
       # Force package release number (integer) or "auto"
-      PACKAGERELEASE=2
+      PACKAGERELEASE=3
       # Previous stable and development version
       prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "amd64") | .version')"
       if [ -z "$prevstable" ]; then
