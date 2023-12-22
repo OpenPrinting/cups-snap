@@ -163,7 +163,7 @@ parts:
   cups:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
-    source-tag: v2.4.6
+    source-tag: 'v2.4.7'
     source-depth: 1
 #   ext:updatesnap
 #     version-format:
@@ -321,7 +321,7 @@ parts:
   qpdf:
     source: https://github.com/qpdf/qpdf/
     source-type: git
-    source-tag: v11.4.0
+    source-tag: 'v11.6.4'
     source-depth: 1
 #   ext:updatesnap
 #     version-format:
