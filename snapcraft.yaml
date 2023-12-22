@@ -14,6 +14,10 @@ architectures:
   - build-on: amd64
   - build-on: arm64
   - build-on: armhf
+# When expanding to RISC-V: We use "jq" (JSON interpreter) for
+# auto-versioning and this is probably similar to "yq" (YAML
+# interpreter) and this one needed special attention for RISC-V. See
+# https://ubuntu.com//blog/we-wish-you-risc-v-holidays
 
 # System user for filters and backends to drop privileges, "lp" is not
 # available in a Snap
@@ -161,6 +165,10 @@ parts:
     source-type: git
     source-tag: v2.4.6
     source-depth: 1
+#   ext:updatesnap
+#     version-format:
+#       lower-than: '3'
+#       no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -191,13 +199,26 @@ parts:
       # Force channel: auto/devel/edge/stable
       CHANNEL=stable
       # Force package release number (integer) or "auto"
-      PACKAGERELEASE=4
+      PACKAGERELEASE=auto
+      # Time stamp of Snap build in Snap Store
+      snapbuilddatehuman=`curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "edge") | select(.channel.architecture == "amd64") | ."created-at"'`
+      snapbuilddate=`date +%s --date=$snapbuilddatehuman`
+      if [ -z "$snapbuilddate" ]; then
+          snapbuilddate=0
+      fi
+      # Time stamp of the last GIT commit of the snapping repository
+      pushd $CRAFT_PROJECT_DIR
+      gitcommitdate=`git log -1 --date=unix | grep Date: | perl -p -e 's/Date:\s*//'`
+      popd
+      if [ -z "$gitcommitdate" ]; then
+          gitcommitdate=0
+      fi
       # Previous stable and development version
-      prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "amd64") | .version')"
+      prevstable="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "stable") | select(.channel.architecture == "'$CRAFT_TARGET_ARCH'") | .version')"
       if [ -z "$prevstable" ]; then
           prevstable=0
       fi
-      prevdevel="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "edge") | select(.channel.architecture == "amd64") | .version')"
+      prevdevel="$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups | jq -r '."channel-map" | .[] | select(.channel.name == "edge") | select(.channel.architecture == "'$CRAFT_TARGET_ARCH'") | .version')"
       if [ -z "$prevdevel" ]; then
           prevdevel=0
       fi
@@ -211,7 +232,9 @@ parts:
           if [ -z "$packagerelease" ]; then
               packagerelease=1
           else
-              packagerelease=$(( $packagerelease + 1 ))
+              if test "$gitcommitdate" -gt "$snapbuilddate"; then
+                  packagerelease=$(( $packagerelease + 1 ))
+              fi
           fi
       else
           packagerelease=$PACKAGERELEASE
@@ -296,7 +319,14 @@ parts:
       - -usr/lib/*/libicui18n.*
 
   qpdf:
-    source: https://github.com/qpdf/qpdf/releases/download/v11.4.0/qpdf-11.4.0.tar.gz
+    source: https://github.com/qpdf/qpdf/
+    source-type: git
+    source-tag: v11.4.0
+    source-depth: 1
+#   ext:updatesnap
+#     version-format:
+#       lower-than: '12'
+#       no-9x-revisions: true
     plugin: cmake
     cmake-parameters:
       - -DCMAKE_INSTALL_PREFIX=/
@@ -333,7 +363,20 @@ parts:
       - -usr/lib/libqpdf.a
 
   ghostscript:
-    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10012/ghostscript-10.01.2.tar.gz
+    # Does not build from GIT, so we use the release tarball here for now
+    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10021/ghostscript-10.02.1.tar.gz
+    #source: https://git.ghostscript.com/ghostpdl.git
+    #source-type: git
+    #source-tag: ghostpdl-10.02.1
+    # Ghostscript is hosting their GIT repository by themselves and not on
+    # GitHub/GitLab, so the ubuntu/desktop-snaps update automation does not
+    # work here.
+    #source-depth: 1
+#   ext:updatesnap
+#     version-format:
+#       format: "ghostpdl-%M.%m.%R"
+#       lower-than: '11'
+#       no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -376,7 +419,12 @@ parts:
   libcupsfilters:
     source: https://github.com/OpenPrinting/libcupsfilters
     source-type: git
+    source-tag: 2.0.0
     source-depth: 1
+#   ext:updatesnap
+#     version-format:
+#       lower-than: '3'
+#       no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -446,7 +494,12 @@ parts:
   libppd:
     source: https://github.com/OpenPrinting/libppd
     source-type: git
+    source-tag: 2.0.0
     source-depth: 1
+#   ext:updatesnap
+#     version-format:
+#       lower-than: '3'
+#       no-9x-revisions: true
     plugin: autotools
     # We only need libppd itself
     autotools-configure-parameters:
@@ -503,7 +556,12 @@ parts:
   cups-filters:
     source: https://github.com/OpenPrinting/cups-filters.git
     source-type: git
+    source-tag: 2.0.0
     source-depth: 1
+#   ext:updatesnap
+#     version-format:
+#       lower-than: '3'
+#       no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -555,7 +613,12 @@ parts:
   cups-browsed:
     source: https://github.com/OpenPrinting/cups-browsed.git
     source-type: git
+    source-tag: 2.0.0
     source-depth: 1
+#   ext:updatesnap
+#     version-format:
+#       lower-than: '3'
+#       no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
