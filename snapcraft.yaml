@@ -363,15 +363,13 @@ parts:
       - -usr/lib/libqpdf.a
 
   ghostscript:
-    # Does not build from GIT, so we use the release tarball here for now
-    source: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10021/ghostscript-10.02.1.tar.gz
+    # use GitHub mirror of GhostPDL here, as original GIT, self-hosted by
+    # Artifex is not supported by ubuntu/desktop-snaps
     #source: https://git.ghostscript.com/ghostpdl.git
-    #source-type: git
-    #source-tag: ghostpdl-10.02.1
-    # Ghostscript is hosting their GIT repository by themselves and not on
-    # GitHub/GitLab, so the ubuntu/desktop-snaps update automation does not
-    # work here.
-    #source-depth: 1
+    source: https://github.com/ArtifexSoftware/ghostpdl.git
+    source-type: git
+    source-tag: ghostpdl-10.02.0
+    source-depth: 1
 #   ext:updatesnap
 #     version-format:
 #       format: "ghostpdl-%M.%m.%R"
@@ -391,6 +389,18 @@ parts:
       - --with-cups-serverbin=/snap/cups/current/lib/cups
       - --with-cups-serverroot=/var/snap/cups/common/etc/cups
       - --with-cups-datadir=/snap/cups/current/share/cups
+    override-pull: |
+      set -eux
+      # Do the actual pull task
+      craftctl default
+      # The repo is actually ghostpdl and not only Ghostscript, so a wider
+      # variety of print data renderers/interpreters/converters. One of
+      # them, gpdl, does not build with our ./configure settings but we
+      # actually do not need it. So delete its source directory to skip
+      # it.
+      # We also delete the source directories pcl and xps to not build
+      # further storage-space-consuming tools.
+      rm -rf gpdl pcl xps
     build-environment:
       # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
