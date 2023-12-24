@@ -165,10 +165,10 @@ parts:
     source-type: git
     source-tag: 'v2.4.7'
     source-depth: 1
-#   ext:updatesnap
-#     version-format:
-#       lower-than: '3'
-#       no-9x-revisions: true
+# ext:updatesnap
+#   version-format:
+#     lower-than: '3'
+#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -323,10 +323,10 @@ parts:
     source-type: git
     source-tag: 'v11.6.4'
     source-depth: 1
-#   ext:updatesnap
-#     version-format:
-#       lower-than: '12'
-#       no-9x-revisions: true
+# ext:updatesnap
+#   version-format:
+#     lower-than: '12'
+#     no-9x-revisions: true
     plugin: cmake
     cmake-parameters:
       - -DCMAKE_INSTALL_PREFIX=/
@@ -370,11 +370,11 @@ parts:
     source-type: git
     source-tag: ghostpdl-10.02.0
     source-depth: 1
-#   ext:updatesnap
-#     version-format:
-#       format: "ghostpdl-%M.%m.%R"
-#       lower-than: '11'
-#       no-9x-revisions: true
+# ext:updatesnap
+#   version-format:
+#     format: "ghostpdl-%M.%m.%R"
+#     lower-than: '11'
+#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -431,10 +431,10 @@ parts:
     source-type: git
     source-tag: 2.0.0
     source-depth: 1
-#   ext:updatesnap
-#     version-format:
-#       lower-than: '3'
-#       no-9x-revisions: true
+# ext:updatesnap
+#   version-format:
+#     lower-than: '3'
+#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -506,10 +506,10 @@ parts:
     source-type: git
     source-tag: 2.0.0
     source-depth: 1
-#   ext:updatesnap
-#     version-format:
-#       lower-than: '3'
-#       no-9x-revisions: true
+# ext:updatesnap
+#   version-format:
+#     lower-than: '3'
+#     no-9x-revisions: true
     plugin: autotools
     # We only need libppd itself
     autotools-configure-parameters:
@@ -568,10 +568,10 @@ parts:
     source-type: git
     source-tag: 2.0.0
     source-depth: 1
-#   ext:updatesnap
-#     version-format:
-#       lower-than: '3'
-#       no-9x-revisions: true
+# ext:updatesnap
+#   version-format:
+#     lower-than: '3'
+#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -625,10 +625,10 @@ parts:
     source-type: git
     source-tag: 2.0.0
     source-depth: 1
-#   ext:updatesnap
-#     version-format:
-#       lower-than: '3'
-#       no-9x-revisions: true
+# ext:updatesnap
+#   version-format:
+#     lower-than: '3'
+#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
