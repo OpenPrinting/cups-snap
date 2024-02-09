@@ -17,3 +17,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repo: ${{ github.repository }}
+          version-schema: 'v(\d+\.\d+\.\d+)'
