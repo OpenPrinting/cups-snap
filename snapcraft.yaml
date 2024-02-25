@@ -1,6 +1,6 @@
 name: cups
 base: core22 # The base Snap is the execution environment for this Snap
-version: '2.4.7-7'
+version: '2.4.7-8'
 grade: stable
 summary: CUPS-based printing stack Snap
 description: Complete printing environment in a Snap
@@ -266,7 +266,7 @@ parts:
   qpdf:
     source: https://github.com/qpdf/qpdf/
     source-type: git
-    source-tag: 'v11.8.0'
+    source-tag: 'v11.9.0'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
