@@ -8,7 +8,7 @@ Complete CUPS printing stack in a Snap
 
 [Snapping applications which print](https://forum.snapcraft.io/t/new-interface-cups-for-all-snaps-which-print/)
 
-**WARNING: Principally the CUPS Snap is a complete, working printing stack, but it is, as any Snap, provided as a read-only file system, isolated from your system, only able to communicate with the outside world through well-defined interfaces. Therefore it can show incompatibilities with your system.
+<B>WARNING: Principally the CUPS Snap is a complete, working printing stack, but it is, as any Snap, provided as a read-only file system, isolated from your system, only able to communicate with the outside world through well-defined interfaces. Therefore it can show incompatibilities with your system.
 
 Especially
 - it has no access to printer drivers installed on the system. Therefore you will not be able to set up printers which need drivers using the printer setup tools available on your desktop.
@@ -16,7 +16,7 @@ Especially
 
 We are working with desktop environment and application developers on solving these issues.
 
-So replace your system's CUPS setup by the CUPS Snap only if you know what you are doing. Especially do not do so in desperation if you think that your system's CUPS setup has a problem.**
+So replace your system's CUPS setup by the CUPS Snap only if you know what you are doing. Especially do not do so in desperation if you think that your system's CUPS setup has a problem.</B>
 
 
 ## Introduction
