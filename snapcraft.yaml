@@ -16,10 +16,7 @@ architectures:
   - build-on: amd64
   - build-on: arm64
   - build-on: armhf
-# When expanding to RISC-V: We use "jq" (JSON interpreter) for
-# auto-versioning and this is probably similar to "yq" (YAML
-# interpreter) and this one needed special attention for RISC-V. See
-# https://ubuntu.com//blog/we-wish-you-risc-v-holidays
+  - build-on: riscv64
 
 # System user for filters and backends to drop privileges, "lp" is not
 # available in a Snap
