@@ -1065,7 +1065,7 @@ schedule_proxy_update (void)
     delay = update_delay;
 
   /* Schedule the update */
-  debug_printf("Updating queues on proxy CUPS in %d msecs\n", delay);
+  debug_printf("Updating queues on proxy CUPS in %ld msecs\n", delay);
   update_timer_id =
     g_timeout_add(delay, update_proxy_printers, NULL);
 }
