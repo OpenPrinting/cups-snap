@@ -897,7 +897,9 @@ update_next_proxy_printer (gpointer user_data)
   int cloned = 0;
   const char *val;
 
-  if (terminating)
+  if (terminating || system_printers == NULL ||
+      system_printers->num_dests == 0 || system_printers->dests == NULL ||
+      system_printers->current_dest >= system_printers->num_dests)
     goto finish;
   
  next:
