@@ -1,6 +1,6 @@
 name: cups
 base: core22 # The base Snap is the execution environment for this Snap
-version: '2.4.11-3'
+version: '2.4.12-1'
 grade: stable
 summary: CUPS-based printing stack Snap
 description: Complete printing environment in a Snap
@@ -162,7 +162,7 @@ parts:
   cups:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
-    source-tag: 'v2.4.11'
+    source-tag: 'v2.4.12'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
@@ -263,7 +263,7 @@ parts:
   qpdf:
     source: https://github.com/qpdf/qpdf/
     source-type: git
-    source-tag: 'v11.9.1'
+    source-tag: 'v11.10.1'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
@@ -371,7 +371,7 @@ parts:
   libcupsfilters:
     source: https://github.com/OpenPrinting/libcupsfilters
     source-type: git
-    source-tag: '2.1.0'
+    source-tag: '2.1.1'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
@@ -446,7 +446,7 @@ parts:
   libppd:
     source: https://github.com/OpenPrinting/libppd
     source-type: git
-    source-tag: '2.1.0'
+    source-tag: '2.1.1'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
@@ -565,7 +565,7 @@ parts:
   cups-browsed:
     source: https://github.com/OpenPrinting/cups-browsed.git
     source-type: git
-    source-tag: '2.1.0'
+    source-tag: '2.1.1'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
