@@ -768,6 +768,11 @@ clone_system_queue_to_proxy (cups_dest_t *dest)
 	    ap_remote_queue_id_line_inserted = 1;
 	    cupsFilePrintf(out, "*APRemoteQueueID: \"\"\n");
 	  }
+
+	  /* System's CUPS will handle copies */
+	  if (!strncasecmp(line, "*cupsManualCopies: true", 23))
+		continue;
+
 	  /* Simply write out the line as we read it */
 	  cupsFilePrintf(out, "%s\n", line);
 	}
