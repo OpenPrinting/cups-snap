@@ -69,7 +69,18 @@ slots:
   cups:
     interface: cups
     cups-socket-directory: $SNAP_COMMON/run
-
+  # This is a slot for the pseudo content interface of clients which plug
+  # the "cups" interface and need to get the CUPS Snap installed.
+  # Actually, the pseudo content interface already works without the CUPS
+  # Snap providing a slot for it, but providing the slot prevents an error
+  # when an Ubuntu Core image with a client application plugging "cups"
+  # and the CUPS Snap is built (using ubuntu-image).
+  install-cups-runtime-dependency:
+    interface: content
+    content: foo
+    read:
+      - $SNAP/meta/snap.yaml
+      
 apps:
   cupsd:
     command: scripts/run-cupsd
