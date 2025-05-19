@@ -212,17 +212,8 @@ parts:
       # by "lpstat -l -e" (https://github.com/OpenPrinting/cups/issues/751)
       perl -p -i -e 's/(#\s*define\s+_CUPS_DNSSD_GET_DESTS\s+)250(\s+)/\1 1000\2/' cups/dest.c
     build-packages:
-      - git
-      - sed
-      - curl
       - perl-base
-      - patch
-      - autoconf
-      - automake
-      - libtool
-      - autotools-dev
-      - pkg-config
-      - g++
+      - libapparmor-dev
       - libavahi-client-dev
       - libavahi-common-dev
       - libavahi-compat-libdnssd-dev
@@ -231,20 +222,18 @@ parts:
       - libkrb5-dev
       - libpam0g-dev
       - libpaper-dev
+      - libsnapd-glib-dev
       - libsystemd-dev
       - libusb-1.0-0-dev
       - po4a
       - po-debconf
       - zlib1g-dev
-      - libapparmor-dev
-      - libsnapd-glib-dev
     stage-packages:
       - libusb-1.0-0
       - libavahi-common3
       - libavahi-client3
       - libpaper1
       - libsnapd-glib1
-      - libapparmor1
     organize:
       var/snap/cups/common/etc: etc
     stage:
@@ -272,8 +261,7 @@ parts:
       - -usr/lib/*/libicui18n.*
 
   qpdf:
-    source: https://github.com/qpdf/qpdf/
-    source-type: git
+    source: https://github.com/qpdf/qpdf.git
     source-tag: 'v11.10.1'
     source-depth: 1
 # ext:updatesnap
@@ -282,13 +270,13 @@ parts:
 #     no-9x-revisions: true
     plugin: cmake
     cmake-parameters:
-      - -DCMAKE_INSTALL_PREFIX=/
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_BUILD_RPATH_USE_ORIGIN=1
+      - -DINSTALL_EXAMPLES=OFF
       - -DUSE_IMPLICIT_CRYPTO=0
       - -DREQUIRE_CRYPTO_GNUTLS=1
       - -DSHOW_FAILED_TEST_OUTPUT=1
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DQTEST_COLOR=0
     build-packages:
       - cmake
       - g++
@@ -304,16 +292,16 @@ parts:
     prime:
       - -etc/fonts
       - -var
-      - -include
-      - -share/man
-      - -share/doc
+      - -usr/include
+      - -usr/lib/*/pkgconfig
+      - -usr/lib/*/libqpdf.a
+      - -usr/lib/cmake
       - -share/lintian
       - -usr/share/fonts
       - -usr/share/man
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
-      - -usr/lib/libqpdf.a
 
   ghostscript:
     # use GitHub mirror of GhostPDL here, as original GIT, self-hosted by
@@ -321,13 +309,18 @@ parts:
     #source: https://git.ghostscript.com/ghostpdl.git
     source: https://github.com/ArtifexSoftware/ghostpdl.git
     source-type: git
-    source-tag: 'ghostpdl-10.05.1rc1_test002'
+    source-tag: 'ghostpdl-10.05.1'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
 #     format: "ghostpdl-%M.%m.%R"
 #     lower-than: '11'
 #     no-9x-revisions: true
+# The repo is actually ghostpdl and not only Ghostscript, so a wider
+# variety of print data renderers/interpreters/converters. One of
+# them, gpdl, does not build with our ./configure settings but we
+# actually do not need it. So build without gpdl. Also, no need to
+# build pcl and xps.
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -337,26 +330,17 @@ parts:
       - --enable-cups
       - --enable-freetype
       - --without-tesseract
+      - --without-pcl
+      - --without-gpdl
+      - --without-xps
       - --datarootdir=/snap/cups/current/share/
       - --with-fontpath=/snap/cups/current/share/cups/fonts
       - --with-cups-serverbin=/snap/cups/current/lib/cups
       - --with-cups-serverroot=/var/snap/cups/common/etc/cups
       - --with-cups-datadir=/snap/cups/current/share/cups
-    override-pull: |
-      set -eux
-      # Do the actual pull task
-      craftctl default
-      # The repo is actually ghostpdl and not only Ghostscript, so a wider
-      # variety of print data renderers/interpreters/converters. One of
-      # them, gpdl, does not build with our ./configure settings but we
-      # actually do not need it. So delete its source directory to skip
-      # it.
-      # We also delete the source directories pcl and xps to not build
-      # further storage-space-consuming tools.
-      rm -rf gpdl pcl xps
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     stage-packages:
       - libpaper1
       - libfontconfig1
@@ -399,14 +383,9 @@ parts:
       - --disable-mutool
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - gettext
-      - autoconf
-      - automake
-      - autotools-dev
-      - pkg-config
-      - g++
       - sharutils
       - liblcms2-dev
       - libpoppler-cpp-dev
@@ -471,26 +450,23 @@ parts:
       - --datadir=/share
       - --datarootdir=/share
       - --includedir=/include
+      - --enable-gs-ps2write
+      - --enable-pdftops
       - --disable-mutool
       - --disable-pdftocairo
       - --disable-acroread
-      - --with-pdftops-path=/snap/cups/current/usr/bin/pdftops
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
-      # We have to force-define the macros for the properties of the
-      # external executables here, as the tests do not work in the Snap
-      # build environment
-      - CFLAGS: "$CFLAGS -DHAVE_GHOSTSCRIPT_PS2WRITE -DHAVE_POPPLER_PDFTOPS_WITH_ORIGPAGESIZES -DHAVE_POPPLER_PDFTOPS_WITH_RESOLUTION"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - gettext
-      - autoconf
-      - automake
-      - autotools-dev
       - pkg-config
       - g++
       - sharutils
       - poppler-utils
+    override-pull: |
+      craftctl default
+      sed -i 's|/usr/bin/pdftops|pdftops|' $CRAFT_PART_SRC/configure.ac
     stage:
       # The *.la file which gets installed by "make install" contains a
       # wrong prefix, breaking parts of this Snap which use this library
@@ -537,12 +513,8 @@ parts:
       - --enable-individual-cups-filters
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
-      - autoconf
-      - autotools-dev
-      - pkg-config
-      - g++
       - sharutils
       - poppler-utils
       - liblcms2-dev
@@ -553,7 +525,6 @@ parts:
     stage-packages:
       - poppler-utils
       - libpoppler-cpp0v5
-      - libdb5.3
       - fonts-freefont-ttf
       - fonts-arphic-uming
       - fontconfig-config
@@ -592,12 +563,8 @@ parts:
       - --without-rcdir
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
-      - autoconf
-      - autotools-dev
-      - pkg-config
-      - g++
       - sharutils
       - libglib2.0-dev
       - libldap2-dev
@@ -608,9 +575,6 @@ parts:
       - libavahi-glib-dev
     stage-packages:
       - libavahi-glib1
-      - libldap-2.5-0
-      - libsasl2-2
-      - libdb5.3
     organize:
       var/snap/cups/common/etc: etc
     prime:
@@ -624,31 +588,6 @@ parts:
       - -usr/share/doc-base
       - -usr/share/lintian
     after: [cups, libcupsfilters, libppd]
-
-  utils:
-    plugin: nil
-    source: .
-    stage-packages:
-      - perl-base
-      - sed
-      - grep
-      - libbinutils
-    organize:
-      usr/bin/: bin/
-      usr/lib/: lib/
-      usr/share/: share/
-    prime:
-      - bin/
-      - lib/
-      - share/
-      - -share/gdb
-      - -share/info
-      - -share/man
-      - -share/doc
-      - -share/lintian
-      # Reported unused by snapcraft linter
-      - -lib/*/libopcodes-*
-      - -lib/*/libbfd-*
 
   scripts:
     plugin: dump
@@ -670,7 +609,7 @@ parts:
       - scripts/
     build-packages:
       - gcc
-    after: [cups, cups-filters, utils]
+    after: [cups, cups-filters]
 
   cups-proxyd:
     plugin: make
@@ -684,7 +623,7 @@ parts:
       craftctl default
     build-environment:
       # To find the libraries built in this Snap
-      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/lib"
+      - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - gcc
       - libglib2.0-dev
