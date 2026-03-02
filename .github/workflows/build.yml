@@ -27,6 +27,18 @@ jobs:
         with:
           path: .
 
+      - name: Install built snap locally
+        run: sudo snap install --dangerous "${{ steps.snapcraft.outputs.snap }}"
+
+      - name: Run basic snap smoke tests
+        run: |
+          snap list | grep "^cups "
+          snap run cups.gs -h || true
+
+      - name: Remove installed snap
+        if: always()
+        run: sudo snap remove cups || true
+
       - name: Upload snap artifact
         uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
