@@ -1,0 +1,47 @@
+name: Build Snap
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-snap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout cups-snap sources
+        uses: actions/checkout@v6
+
+      - name: Show Ubuntu version
+        run: cat /etc/os-release | grep PRETTY_NAME | awk -F '=' '{print $2}'
+
+      # Build verification only – no publish/upload to Snap Store
+      - name: Build snap with snapcraft
+        id: snapcraft
+        uses: snapcore/action-build@v1
+        with:
+          path: .
+
+      - name: Install built snap locally
+        run: sudo snap install --dangerous "${{ steps.snapcraft.outputs.snap }}"
+
+      - name: Run basic snap smoke tests
+        run: |
+          snap list | grep "^cups "
+          snap run cups.gs -h || true
+
+      - name: Remove installed snap
+        if: always()
+        run: sudo snap remove cups || true
+
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: cups-snap-build
+          path: ${{ steps.snapcraft.outputs.snap }}

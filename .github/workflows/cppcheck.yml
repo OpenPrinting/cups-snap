@@ -1,0 +1,42 @@
+name: cppcheck
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  cppcheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update --fix-missing -y
+          sudo apt-get install -y cppcheck libglib2.0-dev-bin
+
+      - name: Generate cups-notifier sources
+        run: |
+          cd cups-proxyd
+          gdbus-codegen \
+            --interface-prefix org.cups.cupsd \
+            --c-namespace Cups \
+            --generate-c-code cups-notifier \
+            org.cups.cupsd.Notifier.xml
+
+      - name: Run cppcheck
+        run: |
+          cppcheck \
+            --enable=warning,performance,portability \
+            --error-exitcode=1 \
+            --inline-suppr \
+            --suppress=missingIncludeSystem \
+            --suppress=unknownMacro \
+            .
+

@@ -1,0 +1,73 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'c-cpp' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Update build environment
+        run: sudo apt-get update --fix-missing -y
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get install -y \
+            gcc \
+            libcups2-dev \
+            libglib2.0-dev \
+            libglib2.0-dev-bin \
+            libavahi-common-dev \
+            libavahi-client-dev \
+            libavahi-glib-dev
+
+      - name: Generate cups-notifier sources
+        run: |
+          cd cups-proxyd
+          gdbus-codegen \
+            --interface-prefix org.cups.cupsd \
+            --c-namespace Cups \
+            --generate-c-code cups-notifier \
+            org.cups.cupsd.Notifier.xml
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: manual
+          queries: +security-and-quality
+
+      - name: Build C sources for CodeQL
+        run: |
+          set -e
+          # cups-proxyd C files (with CUPS, Avahi, GLib)
+          CF="-DVERSION=\"1.0\" $(cups-config --cflags) $(pkg-config --cflags glib-2.0 avahi-client avahi-glib gio-unix-2.0)"
+          cd cups-proxyd
+          gcc -c $CF -o cups-proxyd.o cups-proxyd.c
+          gcc -c $CF -o proxy.o proxy.c
+          gcc -c $CF -o cups-notifier.o cups-notifier.c
+          cd ..
+          # scripts C file (standalone)
+          gcc -c -o scripts/port-occupied.o scripts/port-occupied.c
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
