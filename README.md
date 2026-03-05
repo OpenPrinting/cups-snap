@@ -6,7 +6,6 @@ Complete CUPS printing stack in a Snap
 
 [All from OpenPrinting in the Snap Store](https://snapcraft.io/search?q=OpenPrinting)
 
-
 [Snapping applications which print](https://forum.snapcraft.io/t/new-interface-cups-for-all-snaps-which-print/)
 
 <B>WARNING: Principally the CUPS Snap is a complete, working printing stack, but it is, as any Snap, provided as a read-only file system, isolated from your system, only able to communicate with the outside world through well-defined interfaces. Therefore it can show incompatibilities with your system.
