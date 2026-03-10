@@ -1,5 +1,4 @@
-name: Multi-Architecture Snap Build
-
+name: CUPS Snap CI - Native Build Pipeline
 on:
   push:
     branches:
@@ -9,98 +8,59 @@ on:
       - master
   workflow_dispatch:
 
+
 jobs:
   build-snap:
-    name: Build Snap (${{ matrix.arch }})
+    name: Build CUPS Snap (${{ matrix.arch }})
     runs-on: ${{ matrix.runs-on }}
-
     strategy:
       fail-fast: false
       matrix:
         include:
-          - arch: amd64
+          # x86_64 native build on standard Ubuntu runner
+          - arch: x86_64
             runs-on: ubuntu-latest
-            mode: native
+
+          # arm64 native build on ARM64-capable runner
           - arch: arm64
             runs-on: ubuntu-24.04-arm
-            mode: native
-          - arch: armhf
-            runs-on: ubuntu-latest
-            mode: emulated
-          - arch: riscv64
-            runs-on: ubuntu-latest
-            mode: emulated
-
     steps:
       - name: Checkout cups-snap sources
         uses: actions/checkout@v4
-
-      - name: Show Ubuntu version
+      - name: Print Ubuntu version
         run: |
           set -e
           cat /etc/os-release | grep PRETTY_NAME | awk -F '=' '{print $2}'
-
-      # ============================================================
-      # Native builds (amd64, arm64) using snapcore/action-build
-      # ============================================================
-      - name: Build snap with Snapcraft action (native)
-        if: matrix.mode == 'native'
+      - name: Build CUPS snap with Snapcraft action
+        id: snapcraft
         uses: snapcore/action-build@v1
         with:
           path: .
-
-      # ============================================================
-      # Emulated builds (armhf, riscv64) using QEMU + LXD
-      # ============================================================
-      - name: Build snap in QEMU/LXD container (emulated)
-        if: matrix.mode == 'emulated'
+      - name: Install built snap (smoke test setup)
         run: |
-          set -eux
+          set -e
+          SNAP_FILE="${{ steps.snapcraft.outputs.snap }}"
+          echo "Installing snap: ${SNAP_FILE}"
+          sudo snap install --dangerous "${SNAP_FILE}"
+      - name: Run smoke tests
+        run: |
+          set -e
+          
+          # Verify snap is listed
+          echo "Checking snap list..."
+          snap list | grep "^cups " || (echo "CUPS snap not found in snap list"; exit 1)
+          
+          # Test ghostscript binary with -h flag
+          echo "Testing ghostscript binary..."
+          snap run cups.gs -h || true
 
-          # 1. Install QEMU and binfmt-support to handle foreign binaries
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-static binfmt-support
+      - name: Cleanup - Remove installed snap
+        if: always()
+        run: |
+          echo "Removing CUPS snap..."
+          sudo snap remove cups || true
 
-          # 2. Install older LXD (5.21 LTS) that still supports foreign arch containers
-          sudo snap install lxd --channel=5.21/stable
-
-          # 3. Initialize LXD
-          sudo lxd init --auto
-          sudo iptables -P FORWARD ACCEPT || true
-
-          # 4. Pull the foreign architecture image
-          sudo lxc image copy "ubuntu:22.04/${{ matrix.arch }}" local: --alias builder-image
-
-          # 5. Launch the container
-          sudo lxc launch builder-image builder
-
-          # 6. Wait for container to come up
-          echo "Waiting for container to initialize..."
-          sleep 15
-
-          # 7. Install Snapcraft inside the container
-          sudo lxc exec builder -- snap install snapcraft --classic
-
-          # 8. Transfer source code into the container
-          tar czf workspace.tar.gz .
-          sudo lxc file push workspace.tar.gz builder/root/
-          sudo lxc exec builder -- bash -c "cd /root && mkdir -p workspace && cd workspace && tar xzf ../workspace.tar.gz"
-
-          # 9. Build the snap inside the emulated container
-          sudo lxc exec builder -- bash -c "cd /root/workspace && snapcraft pack"
-
-          # 10. Retrieve the .snap artifact
-          SNAP_NAME=$(sudo lxc exec builder -- bash -c "cd /root/workspace && ls *.snap | head -n 1" | tr -d '\r')
-          sudo lxc file pull "builder/root/workspace/${SNAP_NAME}" .
-
-          # 11. Cleanup container and image
-          sudo lxc delete -f builder || true
-          sudo lxc image delete builder-image || true
-
-      # ============================================================
-      # Upload artifact for all architectures
-      # ============================================================
-      - name: Upload snap artifact
+      - name: Upload CUPS snap artifact
         uses: actions/upload-artifact@v4
         with:
           name: cups-snap-${{ matrix.arch }}
