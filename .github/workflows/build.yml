@@ -1,4 +1,5 @@
-name: CUPS Snap CI - Native Build Pipeline
+name: CUPS Snap CI - Unified Build Pipeline
+
 on:
   push:
     branches:
@@ -8,49 +9,51 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write # Added this so the bot can post the PR comment
 
 jobs:
-  build-snap:
-    name: Build CUPS Snap (${{ matrix.arch }})
+  # Job 1: Native builds for amd64 and arm64
+  build-native:
+    name: Build Native (${{ matrix.arch }})
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # x86_64 native build on standard Ubuntu runner
-          - arch: x86_64
+          - arch: amd64
             runs-on: ubuntu-latest
-
-          # arm64 native build on ARM64-capable runner
           - arch: arm64
             runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout cups-snap sources
         uses: actions/checkout@v4
+
       - name: Print Ubuntu version
         run: |
           set -e
           cat /etc/os-release | grep PRETTY_NAME | awk -F '=' '{print $2}'
+
       - name: Build CUPS snap with Snapcraft action
         id: snapcraft
         uses: snapcore/action-build@v1
         with:
           path: .
+
       - name: Install built snap (smoke test setup)
         run: |
           set -e
           SNAP_FILE="${{ steps.snapcraft.outputs.snap }}"
           echo "Installing snap: ${SNAP_FILE}"
           sudo snap install --dangerous "${SNAP_FILE}"
+
       - name: Run smoke tests
         run: |
           set -e
-          
-          # Verify snap is listed
           echo "Checking snap list..."
           snap list | grep "^cups " || (echo "CUPS snap not found in snap list"; exit 1)
           
-          # Test ghostscript binary with -h flag
           echo "Testing ghostscript binary..."
           snap run cups.gs -h || true
 
@@ -64,5 +67,75 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cups-snap-${{ matrix.arch }}
+          path: ./*.snap
+          if-no-files-found: error
+
+  # Job 2: Remote build via Launchpad for armhf
+  # Job 2: Remote build via Launchpad for armhf
+  build-remote:
+    name: Build Remote (armhf)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cups-snap sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Launchpad Credentials & Scenarios
+        id: check-secrets
+        env:
+          LP_CREDENTIALS: ${{ secrets.LP_CREDENTIALS }}
+        run: |
+          if [ -z "$LP_CREDENTIALS" ]; then
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "available=false" >> $GITHUB_OUTPUT
+              echo "::notice title=Launchpad CI Bypassed::GitHub Actions cannot securely access repository secrets in PRs from external forks. Bypassing the armhf remote build so it does not falsely block your merge. The compilation will be verified automatically in the push workflow immediately after merging into master."
+            else
+              echo "available=false" >> $GITHUB_OUTPUT
+              echo "::error::No secrets found. LP_CREDENTIALS is missing from the repository."
+              exit 1
+            fi
+          else
+            echo "available=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Snapcraft
+        if: steps.check-secrets.outputs.available == 'true'
+        run: |
+          sudo snap install snapcraft --channel latest/stable --classic
+
+      - name: Setup Launchpad credentials
+        if: steps.check-secrets.outputs.available == 'true'
+        env:
+          LP_CREDENTIALS: ${{ secrets.LP_CREDENTIALS }}
+        run: |
+          set -e
+          mkdir -p ~/.local/share/snapcraft/provider/launchpad ~/.local/share/snapcraft
+          echo "$LP_CREDENTIALS" > ~/.local/share/snapcraft/provider/launchpad/credentials
+          echo "$LP_CREDENTIALS" > ~/.local/share/snapcraft/launchpad-credentials
+
+      - name: Remote build CUPS snap on Launchpad
+        if: steps.check-secrets.outputs.available == 'true'
+        run: |
+          set +e # Disable auto-exit to capture output
+          OUTPUT=$(snapcraft remote-build --launchpad-accept-public-upload --build-for=armhf 2>&1)
+          EXIT_CODE=$?
+          set -e # Re-enable auto-exit
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "$OUTPUT" # Print the full log for debugging
+            if echo "$OUTPUT" | grep -iqE "macaroon|unauthorized|authentication|login|credentials"; then
+              echo "::error::Secrets are invalid or expired. Launchpad authentication failed."
+            else
+              echo "::error::Launchpad build failed due to a code compilation error or infrastructure issue."
+            fi
+            exit $EXIT_CODE
+          fi
+
+      - name: Upload CUPS snap artifact
+        if: steps.check-secrets.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cups-snap-armhf
           path: ./*.snap
           if-no-files-found: error

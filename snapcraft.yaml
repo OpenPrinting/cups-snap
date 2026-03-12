@@ -1,6 +1,6 @@
 name: cups
 base: core22 # The base Snap is the execution environment for this Snap
-version: '2.4.16-1'
+version: '2.4.16-2'
 grade: stable
 summary: CUPS-based printing stack Snap
 description: Complete printing environment in a Snap
@@ -12,11 +12,16 @@ adopt-info: cups
 assumes: [snapd2.55]
 
 # Only build on the architectures supported
+# Explicit architecture mapping to support both native runners and Launchpad remote-build
 architectures:
   - build-on: amd64
+    build-for: amd64
   - build-on: arm64
+    build-for: arm64
   - build-on: armhf
+    build-for: armhf
   - build-on: riscv64
+    build-for: riscv64
 
 # System user for filters and backends to drop privileges, "lp" is not
 # available in a Snap
@@ -339,6 +344,9 @@ parts:
       - --with-cups-serverroot=/var/snap/cups/common/etc/cups
       - --with-cups-datadir=/snap/cups/current/share/cups
     build-environment:
+      # Universal fixes: Forces C99 standard, compatible across all architectures.
+      - CFLAGS: "-std=gnu99 -Wno-error=declaration-after-statement"
+      - CXXFLAGS: "-std=gnu++99"
       # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     stage-packages:
@@ -594,7 +602,8 @@ parts:
     source: scripts/
     override-build: |
       set -eux
-      gcc -o port-occupied port-occupied.c
+      # Uses CRAFT_ARCH_TRIPLET_BUILD_FOR to gracefully support all architectures natively and via remote
+      "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-gcc" -o port-occupied port-occupied.c
       craftctl default
     organize:
       run-cupsd: scripts/run-cupsd
