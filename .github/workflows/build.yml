@@ -8,7 +8,8 @@ on:
     branches:
       - master
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
   # Job 1: Native builds for amd64 and arm64
   build-native:
@@ -67,6 +68,7 @@ jobs:
           if-no-files-found: error
 
   # Job 2: Remote build via Launchpad for armhf
+  # Job 2: Remote build via Launchpad for armhf
   build-remote:
     name: Build Remote (armhf)
     runs-on: ubuntu-latest
@@ -76,11 +78,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check Launchpad Credentials
+        id: check-secrets
+        env:
+          LP_CREDENTIALS: ${{ secrets.LP_CREDENTIALS }}
+        run: |
+          if [ -z "$LP_CREDENTIALS" ]; then
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "Notice: Launchpad credentials not available (likely a PR from a fork). Skipping remote build."
+          else
+            echo "available=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install Snapcraft
+        if: steps.check-secrets.outputs.available == 'true'
         run: |
           sudo snap install snapcraft --channel latest/stable --classic
 
       - name: Setup Launchpad credentials
+        if: steps.check-secrets.outputs.available == 'true'
         env:
           LP_CREDENTIALS: ${{ secrets.LP_CREDENTIALS }}
         run: |
@@ -90,11 +106,13 @@ jobs:
           echo "$LP_CREDENTIALS" > ~/.local/share/snapcraft/launchpad-credentials
 
       - name: Remote build CUPS snap on Launchpad
+        if: steps.check-secrets.outputs.available == 'true'
         run: |
           set -e
           snapcraft remote-build --launchpad-accept-public-upload --build-for=armhf
 
       - name: Upload CUPS snap artifact
+        if: steps.check-secrets.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: cups-snap-armhf
