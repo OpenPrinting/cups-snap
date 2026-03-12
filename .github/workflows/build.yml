@@ -71,6 +71,7 @@ jobs:
           if-no-files-found: error
 
   # Job 2: Remote build via Launchpad for armhf
+  # Job 2: Remote build via Launchpad for armhf
   build-remote:
     name: Build Remote (armhf)
     runs-on: ubuntu-latest
@@ -88,7 +89,7 @@ jobs:
           if [ -z "$LP_CREDENTIALS" ]; then
             if [ "${{ github.event_name }}" == "pull_request" ]; then
               echo "available=false" >> $GITHUB_OUTPUT
-              echo "::notice::Launchpad credentials not available in external PRs. Safely skipping remote build."
+              echo "::notice title=Launchpad CI Bypassed::GitHub Actions cannot securely access repository secrets in PRs from external forks. Bypassing the armhf remote build so it does not falsely block your merge. The compilation will be verified automatically in the push workflow immediately after merging into master."
             else
               echo "available=false" >> $GITHUB_OUTPUT
               echo "::error::No secrets found. LP_CREDENTIALS is missing from the repository."
@@ -97,18 +98,6 @@ jobs:
           else
             echo "available=true" >> $GITHUB_OUTPUT
           fi
-
-      - name: Notify Maintainers via PR Comment
-        if: steps.check-secrets.outputs.available == 'false' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⚠️ **Launchpad CI Notice:** \n\nGitHub Actions cannot securely access repository secrets (`LP_CREDENTIALS`) in Pull Requests originating from external forks.\n\nBecause of this, we are **bypassing the `armhf` Launchpad remote build** for this PR check so it does not falsely fail and block your merge. \n\nThe actual `armhf` compilation results will be verified automatically in the `push` workflow where secrets are fully accessible, immediately after this PR is merged into `master`.'
-            })
 
       - name: Install Snapcraft
         if: steps.check-secrets.outputs.available == 'true'
