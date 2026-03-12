@@ -11,12 +11,16 @@ adopt-info: cups
 # `cups` interface in snapd
 assumes: [snapd2.55]
 
-# Only build on the architectures supported
+# Explicit architecture mapping to support both native runners and Launchpad remote-build
 architectures:
   - build-on: amd64
+    build-for: amd64
   - build-on: arm64
+    build-for: arm64
   - build-on: armhf
+    build-for: armhf
   - build-on: riscv64
+    build-for: riscv64
 
 # System user for filters and backends to drop privileges, "lp" is not
 # available in a Snap
@@ -175,15 +179,10 @@ parts:
     source-type: git
     source-tag: 'v2.4.16'
     source-depth: 1
-# ext:updatesnap
-#   version-format:
-#     lower-than: '3'
-#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
       - --exec-prefix=/
-      # Prevent the libraries from being put into lib64
       - --libdir=/lib
       - --datadir=/share
       - --datarootdir=/share
@@ -196,20 +195,10 @@ parts:
       - --without-rcdir
       - --with-docdir=/share/cups/doc
       - --with-container=snap
-      # We use "--with-tls=gnutls" here, as current CUPS defaults to SSL here
-      # and this is buggy, causing a segfault when serving out a HTTPS web
-      # interface page.
       - --with-tls=gnutls
-      #- --enable-debug-printfs
     override-pull: |
       set -eux
-      # Do the actual pull task
       craftctl default
-      # Settings:
-      # Patch to use snapctl with the slot name "cups-server" for Snap mediation
-      #patch -p1 < $CRAFT_PROJECT_DIR/patches/use-snapctl-with-slot-cups-server.patch
-      # Longer timeout for Avahi resolving for cupsGetDests() API function, used
-      # by "lpstat -l -e" (https://github.com/OpenPrinting/cups/issues/751)
       perl -p -i -e 's/(#\s*define\s+_CUPS_DNSSD_GET_DESTS\s+)250(\s+)/\1 1000\2/' cups/dest.c
     build-packages:
       - perl-base
@@ -237,8 +226,6 @@ parts:
     organize:
       var/snap/cups/common/etc: etc
     stage:
-      # The *.la file which gets installed by "make install" contains a
-      # wrong prefix, breaking parts of this Snap which use this library
       - -lib/lib*.la
     prime:
       - -etc/fonts
@@ -252,7 +239,6 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
-      # Reported unused by snapcraft linter
       - -lib/libcupsimage.*
       - -usr/lib/*/libdconf.*
       - -usr/lib/*/libicuio.*
@@ -264,10 +250,6 @@ parts:
     source: https://github.com/qpdf/qpdf.git
     source-tag: 'v11.10.1'
     source-depth: 1
-# ext:updatesnap
-#   version-format:
-#     lower-than: '12'
-#     no-9x-revisions: true
     plugin: cmake
     cmake-parameters:
       - -DCMAKE_INSTALL_PREFIX=/usr
@@ -286,8 +268,6 @@ parts:
     stage-packages:
       - libjpeg-turbo8
     stage:
-      # The *.la file which gets installed by "make install" contains a
-      # wrong prefix, breaking parts of this Snap which use this library
       - -usr/lib/lib*.la
     prime:
       - -etc/fonts
@@ -304,23 +284,10 @@ parts:
       - -usr/share/lintian
 
   ghostscript:
-    # use GitHub mirror of GhostPDL here, as original GIT, self-hosted by
-    # Artifex is not supported by ubuntu/desktop-snaps
-    #source: https://git.ghostscript.com/ghostpdl.git
     source: https://github.com/ArtifexSoftware/ghostpdl.git
     source-type: git
     source-tag: 'ghostpdl-10.07.0rc1_test001'
     source-depth: 1
-# ext:updatesnap
-#   version-format:
-#     format: "ghostpdl-%M.%m.%R"
-#     lower-than: '11'
-#     no-9x-revisions: true
-# The repo is actually ghostpdl and not only Ghostscript, so a wider
-# variety of print data renderers/interpreters/converters. One of
-# them, gpdl, does not build with our ./configure settings but we
-# actually do not need it. So build without gpdl. Also, no need to
-# build pcl and xps.
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -339,7 +306,9 @@ parts:
       - --with-cups-serverroot=/var/snap/cups/common/etc/cups
       - --with-cups-datadir=/snap/cups/current/share/cups
     build-environment:
-      # To find the libraries built in this Snap
+      # Universal fixes: Forces C99 standard, compatible across all architectures.
+      - CFLAGS: "-std=gnu99 -Wno-error=declaration-after-statement"
+      - CXXFLAGS: "-std=gnu++99"
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     stage-packages:
       - libpaper1
@@ -368,10 +337,6 @@ parts:
     source-type: git
     source-tag: '2.1.1'
     source-depth: 1
-# ext:updatesnap
-#   version-format:
-#     lower-than: '3'
-#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -382,7 +347,6 @@ parts:
       - --disable-avahi
       - --disable-mutool
     build-environment:
-      # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - gettext
@@ -409,8 +373,6 @@ parts:
       - libexif12
     stage:
       - -lib/lib*.la
-      # The *.la file which gets installed by "make install" contains a
-      # wrong prefix, breaking parts of this Snap which use this library
     prime:
       - -etc
       - -var
@@ -429,7 +391,6 @@ parts:
       - usr/lib/lib*.so*
       - usr/lib/*/lib*.so*
       - usr/lib/*/nss
-      # Reported unused by snapcraft linter
       - -usr/lib/*/libssl3.*
     after: [cups, qpdf, ghostscript]
 
@@ -438,12 +399,7 @@ parts:
     source-type: git
     source-tag: '2.1.1'
     source-depth: 1
-# ext:updatesnap
-#   version-format:
-#     lower-than: '3'
-#     no-9x-revisions: true
     plugin: autotools
-    # We only need libppd itself
     autotools-configure-parameters:
       - --prefix=/
       - --exec-prefix=/
@@ -456,7 +412,6 @@ parts:
       - --disable-pdftocairo
       - --disable-acroread
     build-environment:
-      # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - gettext
@@ -468,8 +423,6 @@ parts:
       craftctl default
       sed -i 's|/usr/bin/pdftops|pdftops|' $CRAFT_PART_SRC/configure.ac
     stage:
-      # The *.la file which gets installed by "make install" contains a
-      # wrong prefix, breaking parts of this Snap which use this library
       - -lib/lib*.la
     prime:
       - -etc
@@ -497,10 +450,6 @@ parts:
     source-type: git
     source-tag: '2.0.1'
     source-depth: 1
-# ext:updatesnap
-#   version-format:
-#     lower-than: '3'
-#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -512,7 +461,6 @@ parts:
       - --disable-universal-cups-filter
       - --enable-individual-cups-filters
     build-environment:
-      # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - sharutils
@@ -540,7 +488,6 @@ parts:
       - -usr/share/doc
       - -usr/share/doc-base
       - -usr/share/lintian
-      # Reported unused by snapcraft linter
       - -usr/lib/*/libssl3.*
     after: [cups, qpdf, ghostscript, libcupsfilters, libppd]
 
@@ -549,10 +496,6 @@ parts:
     source-type: git
     source-tag: '2.1.1'
     source-depth: 1
-# ext:updatesnap
-#   version-format:
-#     lower-than: '3'
-#     no-9x-revisions: true
     plugin: autotools
     autotools-configure-parameters:
       - --prefix=/
@@ -562,7 +505,6 @@ parts:
       - --includedir=/include
       - --without-rcdir
     build-environment:
-      # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - sharutils
@@ -594,7 +536,8 @@ parts:
     source: scripts/
     override-build: |
       set -eux
-      gcc -o port-occupied port-occupied.c
+      # Uses CRAFT_ARCH_TRIPLET_BUILD_FOR to gracefully support all architectures natively and via remote
+      "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-gcc" -o port-occupied port-occupied.c
       craftctl default
     organize:
       run-cupsd: scripts/run-cupsd
@@ -616,13 +559,9 @@ parts:
     source: cups-proxyd
     override-build: |
       set -eux
-      # We do "make clean" here that we do not accidentally use
-      # binaries manually built in the source tree for development and
-      # copied into a local Snap build process
       make clean
       craftctl default
     build-environment:
-      # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     build-packages:
       - gcc
