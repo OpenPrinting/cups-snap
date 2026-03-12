@@ -8,8 +8,11 @@ on:
     branches:
       - master
   workflow_dispatch:
+
 permissions:
   contents: read
+  pull-requests: write # Added this so the bot can post the PR comment
+
 jobs:
   # Job 1: Native builds for amd64 and arm64
   build-native:
@@ -68,7 +71,6 @@ jobs:
           if-no-files-found: error
 
   # Job 2: Remote build via Launchpad for armhf
-  # Job 2: Remote build via Launchpad for armhf
   build-remote:
     name: Build Remote (armhf)
     runs-on: ubuntu-latest
@@ -78,17 +80,35 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check Launchpad Credentials
+      - name: Check Launchpad Credentials & Scenarios
         id: check-secrets
         env:
           LP_CREDENTIALS: ${{ secrets.LP_CREDENTIALS }}
         run: |
           if [ -z "$LP_CREDENTIALS" ]; then
-            echo "available=false" >> $GITHUB_OUTPUT
-            echo "Notice: Launchpad credentials not available (likely a PR from a fork). Skipping remote build."
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "available=false" >> $GITHUB_OUTPUT
+              echo "::notice::Launchpad credentials not available in external PRs. Safely skipping remote build."
+            else
+              echo "available=false" >> $GITHUB_OUTPUT
+              echo "::error::No secrets found. LP_CREDENTIALS is missing from the repository."
+              exit 1
+            fi
           else
             echo "available=true" >> $GITHUB_OUTPUT
           fi
+
+      - name: Notify Maintainers via PR Comment
+        if: steps.check-secrets.outputs.available == 'false' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Launchpad CI Notice:** \n\nGitHub Actions cannot securely access repository secrets (`LP_CREDENTIALS`) in Pull Requests originating from external forks.\n\nBecause of this, we are **bypassing the `armhf` Launchpad remote build** for this PR check so it does not falsely fail and block your merge. \n\nThe actual `armhf` compilation results will be verified automatically in the `push` workflow where secrets are fully accessible, immediately after this PR is merged into `master`.'
+            })
 
       - name: Install Snapcraft
         if: steps.check-secrets.outputs.available == 'true'
@@ -108,8 +128,20 @@ jobs:
       - name: Remote build CUPS snap on Launchpad
         if: steps.check-secrets.outputs.available == 'true'
         run: |
-          set -e
-          snapcraft remote-build --launchpad-accept-public-upload --build-for=armhf
+          set +e # Disable auto-exit to capture output
+          OUTPUT=$(snapcraft remote-build --launchpad-accept-public-upload --build-for=armhf 2>&1)
+          EXIT_CODE=$?
+          set -e # Re-enable auto-exit
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "$OUTPUT" # Print the full log for debugging
+            if echo "$OUTPUT" | grep -iqE "macaroon|unauthorized|authentication|login|credentials"; then
+              echo "::error::Secrets are invalid or expired. Launchpad authentication failed."
+            else
+              echo "::error::Launchpad build failed due to a code compilation error or infrastructure issue."
+            fi
+            exit $EXIT_CODE
+          fi
 
       - name: Upload CUPS snap artifact
         if: steps.check-secrets.outputs.available == 'true'
