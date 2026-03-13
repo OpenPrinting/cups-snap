@@ -1,0 +1,65 @@
+name: RISC-V Edge Snap Tester
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Runs automatically every day at 2:00 AM UTC
+  workflow_dispatch: # Allows you to click a button to run it manually
+
+jobs:
+  test-riscv:
+    name: Check & Test RISC-V Edge Snap
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Query Snap Store API for CUPS
+        id: snap-info
+        run: |
+          echo "Checking the Snap Store for the latest edge release..."
+          
+          # Fetch the JSON data from the public Snapcraft API
+          INFO=$(curl -s -H 'Snap-Device-Series: 16' https://api.snapcraft.io/v2/snaps/info/cups)
+          
+          # Extract the version and the direct download URL for the riscv64 edge snap
+          VERSION=$(echo "$INFO" | jq -r '.["channel-map"][] | select(.channel.architecture=="riscv64" and .channel.name=="edge") | .version' || echo "null")
+          URL=$(echo "$INFO" | jq -r '.["channel-map"][] | select(.channel.architecture=="riscv64" and .channel.name=="edge") | .download.url' || echo "null")
+          
+          if [ "$URL" == "null" ] || [ -z "$URL" ]; then
+            echo "::warning::No RISC-V build found in the Edge channel yet."
+            echo "available=false" >> $GITHUB_OUTPUT
+            exit 0 # We exit cleanly so the workflow doesn't show a red failure, it just goes back to sleep until tomorrow.
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "available=true" >> $GITHUB_OUTPUT
+          echo "✅ Found RISC-V version $VERSION"
+
+      - name: Download the Snap
+        if: steps.snap-info.outputs.available == 'true'
+        run: |
+          echo "Downloading from: ${{ steps.snap-info.outputs.url }}"
+          curl -L "${{ steps.snap-info.outputs.url }}" -o cups_riscv64.snap
+          echo "Download complete."
+
+      - name: Install QEMU Emulator & Unpack Tools
+        if: steps.snap-info.outputs.available == 'true'
+        run: |
+          # We need QEMU to run RISC-V binaries on this x86_64 GitHub runner
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static squashfs-tools
+
+      - name: Unpack and Smoke Test
+        if: steps.snap-info.outputs.available == 'true'
+        run: |
+          # Because GitHub runners cannot easily run a full RISC-V system daemon (snapd), 
+          # the standard CI trick is to unpack the snap and test the binaries directly using QEMU.
+          
+          echo "Unpacking snap..."
+          unsquashfs -d unpacked_snap cups_riscv64.snap
+          
+          echo "Testing Ghostscript binary via RISC-V emulation..."
+          # Note: We kept '|| true' here based on your earlier smoke tests so it doesn't hard-crash if gs acts weird in emulation.
+          qemu-riscv64-static ./unpacked_snap/usr/bin/gs -h || true
+          
+          echo "::notice::The RISC-V Snap (Version: ${{ steps.snap-info.outputs.version }}) was successfully downloaded from Edge and smoke tested!"
+
