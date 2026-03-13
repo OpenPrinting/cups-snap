@@ -62,3 +62,4 @@ jobs:
           qemu-riscv64-static ./unpacked_snap/usr/bin/gs -h || true
           
           echo "::notice::The RISC-V Snap (Version: ${{ steps.snap-info.outputs.version }}) was successfully downloaded from Edge and smoke tested!"
+
