@@ -1,6 +1,6 @@
 name: cups
 base: core22 # The base Snap is the execution environment for this Snap
-version: '2.4.18-1'
+version: '2.4.19-1'
 grade: stable
 summary: CUPS-based printing stack Snap
 description: Complete printing environment in a Snap
@@ -178,7 +178,7 @@ parts:
   cups:
     source: https://github.com/OpenPrinting/cups.git
     source-type: git
-    source-tag: 'v2.4.18'
+    source-tag: 'v2.4.19'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
