@@ -49,6 +49,19 @@ jobs:
           sudo snap install --dangerous "${SNAP_FILE}"
           snap list | grep "^cups " || (echo "CUPS snap not found in snap list"; exit 1)
 
+      - name: Set up Avahi for the driverless test
+        run: |
+          set -e
+          # ippeveprinter advertises the virtual printer over DNS-SD and aborts
+          # (avahi assertion) if no Avahi daemon is reachable, so make sure one
+          # is running on the runner before the print-through.
+          sudo apt-get update
+          sudo apt-get install -y avahi-daemon avahi-utils dbus
+          sudo systemctl start dbus 2>/dev/null || sudo service dbus start || true
+          sudo systemctl start avahi-daemon 2>/dev/null || sudo service avahi-daemon start || true
+          sleep 2
+          systemctl is-active avahi-daemon || true
+
       - name: Sandbox integration test (full print-through)
         run: |
           set -e
