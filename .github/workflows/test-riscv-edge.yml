@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Checkout cups-snap sources
+        uses: actions/checkout@v4
+
       - name: Query Snap Store API for CUPS
         id: snap-info
         run: |
@@ -48,18 +51,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y qemu-user-static squashfs-tools
 
-      - name: Unpack and Smoke Test
+      - name: Unpack and smoke test (riscv64, emulated)
         if: steps.snap-info.outputs.available == 'true'
         run: |
-          # Because GitHub runners cannot easily run a full RISC-V system daemon (snapd), 
-          # the standard CI trick is to unpack the snap and test the binaries directly using QEMU.
-          
-          echo "Unpacking snap..."
-          unsquashfs -d unpacked_snap cups_riscv64.snap
-          
-          echo "Testing Ghostscript binary via RISC-V emulation..."
-          # Note: We kept '|| true' here based on your earlier smoke tests so it doesn't hard-crash if gs acts weird in emulation.
-          qemu-riscv64-static ./unpacked_snap/usr/bin/gs -h || true
-          
-          echo "::notice::The RISC-V Snap (Version: ${{ steps.snap-info.outputs.version }}) was successfully downloaded from Edge and smoke tested!"
+          set -e
+          # snapd cannot run a full RISC-V system daemon under emulation, so we
+          # unpack the snap and run its bundled binaries through qemu-user.  This
+          # uses the same helper as the armhf leg in build.yml.
+          sh tests/smoke-unpacked.sh cups_riscv64.snap qemu-riscv64-static
+          echo "::notice::The RISC-V Snap (Version: ${{ steps.snap-info.outputs.version }}) was downloaded from Edge and smoke tested!"
 

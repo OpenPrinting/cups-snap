@@ -131,6 +131,18 @@ jobs:
             exit $EXIT_CODE
           fi
 
+      - name: Smoke test (armhf, emulated)
+        if: steps.check-secrets.outputs.available == 'true'
+        run: |
+          set -e
+          # snapd cannot run under emulation, so we unpack the Launchpad-built
+          # armhf snap and run its bundled binaries through qemu-user instead of
+          # the full daemon-level print-through (that runs on the native legs).
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static squashfs-tools
+          SNAP_FILE="$(ls ./*.snap | head -1)"
+          sh tests/smoke-unpacked.sh "${SNAP_FILE}" qemu-arm-static
+
       - name: Upload CUPS snap artifact
         if: steps.check-secrets.outputs.available == 'true'
         uses: actions/upload-artifact@v4
