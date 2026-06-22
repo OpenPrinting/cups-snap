@@ -46,6 +46,14 @@ IPPEVE_NAME="CITestPrinter"
 IPPEVE_LOG="$(mktemp)"
 IPPEVE_PID=""
 
+# Minimal "network printer": nc captures the AppSocket/JetDirect data the queue
+# sends on this port into PRINT_OUTPUT.  This replaces the file: backend, which
+# newer CUPS (2.4.x onwards) no longer provides.
+SOCKET_PORT=9100
+PRINTER_URI="socket://localhost:${SOCKET_PORT}/"
+PRINT_OUTPUT="$(mktemp)"
+NC_PID=""
+
 export DEBIAN_FRONTEND=noninteractive
 
 log()  { echo "sandbox-test[$MODE]: $*"; }
@@ -74,11 +82,13 @@ dump_diagnostics() {
 cleanup() {
 	[ -n "$IPPEVE_PID" ] && kill "$IPPEVE_PID" >/dev/null 2>&1 || true
 	pkill -f ippeveprinter >/dev/null 2>&1 || true
+	[ -n "$NC_PID" ] && kill "$NC_PID" >/dev/null 2>&1 || true
+	pkill -f "nc -l -k $SOCKET_PORT" >/dev/null 2>&1 || true
 	cups.cancel -a "$QUEUE"  >/dev/null 2>&1 || true
 	cups.lpadmin -x "$QUEUE" >/dev/null 2>&1 || true
 	cancel -a "$QUEUE"       >/dev/null 2>&1 || true
 	lpadmin -x "$QUEUE"      >/dev/null 2>&1 || true
-	rm -f "$IPPEVE_LOG"
+	rm -f "$IPPEVE_LOG" "$PRINT_OUTPUT"
 }
 
 trap 'rc=$?; [ "$rc" -ne 0 ] && { log "FAILED (exit $rc)"; dump_diagnostics; }; cleanup; exit $rc' EXIT
@@ -126,14 +136,42 @@ install_snap() {
 	done
 }
 
+# start_socket_printer -- a one-line network printer: accept the (filtered) job
+# data on SOCKET_PORT with nc and save it to PRINT_OUTPUT.  Gives the test a real,
+# hardware-free print sink plus a verifiable artifact, and avoids the file:
+# backend (gone in newer CUPS) entirely.
+start_socket_printer() {
+	command -v nc >/dev/null 2>&1 || apt-get install -y netcat-openbsd >/dev/null
+	log "starting socket printer on port $SOCKET_PORT (nc)..."
+	nc -l -k "$SOCKET_PORT" > "$PRINT_OUTPUT" 2>/dev/null &
+	NC_PID=$!
+	i=0
+	while [ "$i" -lt 30 ]; do
+		ss -ltn 2>/dev/null | grep -q ":$SOCKET_PORT" && return 0
+		kill -0 "$NC_PID" 2>/dev/null || { log "socket printer (nc) exited at startup"; return 1; }
+		i=$((i + 1)); sleep 1
+	done
+	log "socket printer did not start listening in time"
+	return 1
+}
+
+# verify_output -- confirm the socket printer actually received print data.
+verify_output() {
+	if [ -s "$PRINT_OUTPUT" ]; then
+		log "socket printer captured $(wc -c < "$PRINT_OUTPUT") bytes of print data"
+	else
+		log "WARNING: socket printer captured no data"
+	fi
+}
+
 # make_raw_queue <lpadmin-cmd> <lpstat-cmd> -- create a classic raw queue on the
-# file:/dev/null device (no ippeveprinter, so no DNS-SD queue leaking onto other
-# CUPS instances).  Raw is enough to validate that a job flows through the chosen
+# socket printer (no ippeveprinter, so no DNS-SD queue leaking onto other CUPS
+# instances).  Raw is enough to validate that a job flows through the chosen
 # cupsd in the chosen mode.
 make_raw_queue() {
 	lpadmin_cmd="$1"; lpstat_cmd="$2"
-	log "creating classic raw queue '$QUEUE' (file:/dev/null) via $lpadmin_cmd"
-	$lpadmin_cmd -p "$QUEUE" -v file:/dev/null -E
+	log "creating classic raw queue '$QUEUE' ($PRINTER_URI) via $lpadmin_cmd"
+	$lpadmin_cmd -p "$QUEUE" -v "$PRINTER_URI" -E
 	$lpstat_cmd -p "$QUEUE" || true
 	$lpstat_cmd -v "$QUEUE" || true
 }
@@ -209,15 +247,16 @@ run_proxy() {
 	# dbus lets the host CUPS deliver live add/remove notifications to
 	# cups-proxyd (belt and suspenders alongside its start-up sync below).
 	systemctl start dbus 2>/dev/null || service dbus start || true
+	start_socket_printer
 
 	# Create the queue on the host CUPS *before* cups-proxyd starts, so its
 	# start-up "sync with current state" (see cups-proxyd.c) mirrors an already
 	# existing queue -- rather than relying on a live notification.  Use a PPD
 	# (not a raw queue): cups-proxyd cannot clone raw queues ("Unable to load
 	# PPD ... Bad Request"), it needs the PPD to replicate the queue.
-	log "creating classic PPD queue '$QUEUE' on the host (file:/dev/null)..."
+	log "creating classic PPD queue '$QUEUE' on the host ($PRINTER_URI)..."
 	[ -f "$GENERIC_PPD" ] || { log "generic PPD not found: $GENERIC_PPD"; return 1; }
-	lpadmin -p "$QUEUE" -P "$GENERIC_PPD" -v file:/dev/null -E
+	lpadmin -p "$QUEUE" -P "$GENERIC_PPD" -v "$PRINTER_URI" -E
 	lpstat -p "$QUEUE" || true
 	lpstat -v "$QUEUE" || true
 
@@ -258,6 +297,7 @@ run_proxy() {
 	done
 	[ "$done_ok" = 1 ] || { log "proxied job did not complete on the host CUPS"; return 1; }
 	log "proxied job completed on the host CUPS (proxy path verified)"
+	verify_output
 }
 
 # ---------------------------------------------------------------------------
@@ -276,8 +316,10 @@ run_parallel() {
 	snap restart cups.cupsd
 	wait_scheduler "cups.lpstat"
 
+	start_socket_printer
 	make_raw_queue "cups.lpadmin" "cups.lpstat"
 	submit_and_verify "cups.lp" "cups.lpstat" || return 1
+	verify_output
 }
 
 # ---------------------------------------------------------------------------
