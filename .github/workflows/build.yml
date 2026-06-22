@@ -3,10 +3,10 @@ name: CUPS Snap CI - Unified Build Pipeline
 on:
   push:
     branches:
-      - master
+      - '**'
   pull_request:
     branches:
-      - master
+      - '**'
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,9 @@ permissions:
   pull-requests: write # Added this so the bot can post the PR comment
 
 jobs:
-  # Job 1: Native builds for amd64 and arm64
+  # Job 1: Build the snap once per native architecture and publish it as an
+  # artifact.  The per-mode tests download it, so the (slow) snap build runs
+  # once per arch instead of once per mode.
   build-native:
     name: Build Native (${{ matrix.arch }})
     runs-on: ${{ matrix.runs-on }}
@@ -41,34 +43,53 @@ jobs:
         with:
           path: .
 
-      - name: Install built snap (smoke test setup)
-        run: |
-          set -e
-          SNAP_FILE="${{ steps.snapcraft.outputs.snap }}"
-          echo "Installing snap: ${SNAP_FILE}"
-          sudo snap install --dangerous "${SNAP_FILE}"
-
-      - name: Run smoke tests
-        run: |
-          set -e
-          echo "Checking snap list..."
-          snap list | grep "^cups " || (echo "CUPS snap not found in snap list"; exit 1)
-          
-          echo "Testing ghostscript binary..."
-          snap run cups.gs -h || true
-
-      - name: Cleanup - Remove installed snap
-        if: always()
-        run: |
-          echo "Removing CUPS snap..."
-          sudo snap remove cups || true
-
       - name: Upload CUPS snap artifact
         uses: actions/upload-artifact@v4
         with:
           name: cups-snap-${{ matrix.arch }}
           path: ./*.snap
           if-no-files-found: error
+
+  # Job 2: Test each native snap in all three run-cupsd operating modes
+  # (stand-alone, proxy, parallel).  Each (arch, mode) runs in its own fresh
+  # job so the modes can't interfere with each other (e.g. who owns port 631)
+  # and a failure points at exactly one mode.
+  test-native:
+    name: Test ${{ matrix.arch }} (${{ matrix.mode }})
+    needs: build-native
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: amd64, runs-on: ubuntu-latest,    mode: standalone }
+          - { arch: amd64, runs-on: ubuntu-latest,    mode: proxy }
+          - { arch: amd64, runs-on: ubuntu-latest,    mode: parallel }
+          - { arch: arm64, runs-on: ubuntu-24.04-arm, mode: standalone }
+          - { arch: arm64, runs-on: ubuntu-24.04-arm, mode: proxy }
+          - { arch: arm64, runs-on: ubuntu-24.04-arm, mode: parallel }
+    steps:
+      - name: Checkout cups-snap sources
+        uses: actions/checkout@v4
+
+      - name: Download the built snap
+        uses: actions/download-artifact@v4
+        with:
+          name: cups-snap-${{ matrix.arch }}
+          path: snap-artifact
+
+      - name: Sandbox integration test (${{ matrix.mode }} mode)
+        run: |
+          set -e
+          SNAP_FILE="$(ls snap-artifact/*.snap | head -1)"
+          echo "Testing ${{ matrix.mode }} mode with ${SNAP_FILE}"
+          sudo sh tests/sandbox-test.sh "${{ matrix.mode }}" "${SNAP_FILE}"
+
+      - name: Cleanup - Remove installed snap
+        if: always()
+        run: |
+          echo "Removing CUPS snap..."
+          sudo snap remove cups || true
 
   # Job 2: Remote build via Launchpad for armhf
   # Job 2: Remote build via Launchpad for armhf
@@ -121,16 +142,37 @@ jobs:
           OUTPUT=$(snapcraft remote-build --launchpad-accept-public-upload --build-for=armhf 2>&1)
           EXIT_CODE=$?
           set -e # Re-enable auto-exit
-          
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "$OUTPUT" # Print the full log for debugging
+          echo "$OUTPUT" # Print the full log for debugging
+
+          if ls ./*.snap >/dev/null 2>&1; then
+            # The build artifact is present.  snapcraft remote-build sometimes
+            # still exits non-zero because of a transient glitch while fetching
+            # the build *logs* from Launchpad AFTER a successful build+download
+            # (e.g. "RemoteDisconnected ... fetching build logs"); that must not
+            # fail the job when the snap itself was produced.
+            if [ $EXIT_CODE -ne 0 ]; then
+              echo "::warning::snapcraft remote-build exited ${EXIT_CODE}, but the armhf snap was produced; treating as success."
+            fi
+          else
             if echo "$OUTPUT" | grep -iqE "macaroon|unauthorized|authentication|login|credentials"; then
               echo "::error::Secrets are invalid or expired. Launchpad authentication failed."
             else
-              echo "::error::Launchpad build failed due to a code compilation error or infrastructure issue."
+              echo "::error::Launchpad build failed (no snap artifact produced)."
             fi
-            exit $EXIT_CODE
+            exit "${EXIT_CODE:-1}"
           fi
+
+      - name: Smoke test (armhf, emulated)
+        if: steps.check-secrets.outputs.available == 'true'
+        run: |
+          set -e
+          # snapd cannot run under emulation, so we unpack the Launchpad-built
+          # armhf snap and run its bundled binaries through qemu-user instead of
+          # the full daemon-level print-through (that runs on the native legs).
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static squashfs-tools
+          SNAP_FILE="$(ls ./*.snap | head -1)"
+          sh tests/smoke-unpacked.sh "${SNAP_FILE}" qemu-arm-static
 
       - name: Upload CUPS snap artifact
         if: steps.check-secrets.outputs.available == 'true'
