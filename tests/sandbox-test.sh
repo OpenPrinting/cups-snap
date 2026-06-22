@@ -83,12 +83,14 @@ cleanup() {
 
 trap 'rc=$?; [ "$rc" -ne 0 ] && { log "FAILED (exit $rc)"; dump_diagnostics; }; cleanup; exit $rc' EXIT
 
-# wait_scheduler <lpstat-command> -- poll until "scheduler is running".
+# wait_scheduler <lpstat-command> -- poll until the scheduler is reachable.
+# Use the exit code of `lpstat -r` (0 when the scheduler is running), not its
+# printed message, which may change in future CUPS versions.
 wait_scheduler() {
 	cmd="$1"
 	i=0
 	while [ "$i" -lt 60 ]; do
-		if $cmd -r 2>/dev/null | grep -q 'scheduler is running'; then
+		if $cmd -r >/dev/null 2>&1; then
 			return 0
 		fi
 		i=$((i + 1)); sleep 1
