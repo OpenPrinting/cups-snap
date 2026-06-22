@@ -59,6 +59,8 @@ dump_diagnostics() {
 		echo "--- host lpstat -t ---"; lpstat -t           2>&1 || true
 		echo "--- host cupsd error_log ---"
 		tail -n 150 /var/log/cups/error_log 2>/dev/null || true
+		echo "--- cups-proxyd log ---"
+		tail -n 150 /var/snap/cups/current/var/log/cups-proxyd_log 2>/dev/null || true
 	fi
 	if [ "$MODE" = standalone ]; then
 		echo "--- ippeveprinter log ---"; tail -n 150 "$IPPEVE_LOG" 2>/dev/null || true
@@ -196,37 +198,46 @@ run_standalone() {
 # ---------------------------------------------------------------------------
 run_proxy() {
 	# Host CUPS present, no no-proxy marker -> snap runs as a proxy.  The queue
-	# lives on the HOST cupsd; the snap mirrors it and proxies snapped clients'
-	# jobs to it.
+	# lives on the HOST cupsd; the snap's cups-proxyd mirrors it into the snapped
+	# CUPS and the snapped client's job is proxied to the host.
 	install_host_cups
-	install_snap                       # detects host CUPS -> proxy mode
-	wait_scheduler "cups.lpstat"       # snap cupsd (on its domain socket)
+	# dbus lets the host CUPS deliver live add/remove notifications to
+	# cups-proxyd (belt and suspenders alongside its start-up sync below).
+	systemctl start dbus 2>/dev/null || service dbus start || true
 
-	# Create the queue on the host CUPS.
+	# Create the queue on the host CUPS *before* cups-proxyd starts, so its
+	# start-up "sync with current state" (see cups-proxyd.c) mirrors an already
+	# existing queue -- rather than relying on a live notification.
 	make_raw_queue "lpadmin" "lpstat"
 
-	# The snap's cups-proxyd should mirror the host queue into the snapped CUPS.
+	install_snap                       # snap detects host CUPS -> proxy mode
+	# cups-proxyd is spawned by run-cupsd, but at first install it started before
+	# the cups-host plug was connected (so it could not reach the host CUPS).
+	# Restart now that cups-host is connected and the host queue exists, so its
+	# start-up sync mirrors the queue.
+	log "restarting the snapped cupsd so cups-proxyd syncs the host queues..."
+	snap restart cups.cupsd
+	wait_scheduler "cups.lpstat"       # snap cupsd (on its domain socket)
+
+	# Require the host queue to be mirrored into the snapped CUPS (proxy:// device).
 	log "waiting for the host queue to be mirrored into the snapped CUPS..."
 	mirrored=0; i=0
-	while [ "$i" -lt 30 ]; do
+	while [ "$i" -lt 60 ]; do
 		if cups.lpstat -v "$QUEUE" 2>/dev/null | grep -q "$QUEUE"; then
 			mirrored=1; break
 		fi
 		i=$((i + 1)); sleep 1
 	done
+	[ "$mirrored" = 1 ] || { log "host queue was not mirrored into the snap by cups-proxyd"; return 1; }
+	log "queue mirrored into the snapped CUPS:"; cups.lpstat -v "$QUEUE" || true
 
-	if [ "$mirrored" = 1 ]; then
-		log "queue mirrored; printing via the snapped client (proxied to host)"
-		printf 'CUPS Snap CI (proxy) print-through test.\n' \
-			| cups.lp -d "$QUEUE" -t ci-job 2>&1 || { log "snapped lp failed"; return 1; }
-	else
-		log "WARNING: queue not mirrored into the snap; printing via the host client"
-		printf 'CUPS Snap CI (proxy) print-through test.\n' \
-			| lp -d "$QUEUE" -t ci-job 2>&1 || { log "host lp failed"; return 1; }
-	fi
+	# Print via the SNAPPED client; the job must traverse the proxy to the host.
+	log "printing via the snapped client (job is proxied to the host CUPS)..."
+	printf 'CUPS Snap CI (proxy) print-through test.\n' \
+		| cups.lp -d "$QUEUE" -t ci-job 2>&1 || { log "snapped lp failed"; return 1; }
 
-	# Either way the job must complete on the HOST queue.
-	log "waiting for the job to complete on the host CUPS..."
+	# The job must complete on the HOST queue (proves the proxy path end to end).
+	log "waiting for the proxied job to complete on the host CUPS..."
 	done_ok=0; i=0
 	while [ "$i" -lt 60 ]; do
 		if lpstat -W completed -o "$QUEUE" 2>/dev/null | grep -q "$QUEUE"; then
@@ -234,8 +245,8 @@ run_proxy() {
 		fi
 		i=$((i + 1)); sleep 1
 	done
-	[ "$done_ok" = 1 ] || { log "job did not complete on the host CUPS"; return 1; }
-	log "job completed on the host CUPS (proxy path)"
+	[ "$done_ok" = 1 ] || { log "proxied job did not complete on the host CUPS"; return 1; }
+	log "proxied job completed on the host CUPS (proxy path verified)"
 }
 
 # ---------------------------------------------------------------------------
