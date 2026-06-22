@@ -133,15 +133,24 @@ jobs:
           OUTPUT=$(snapcraft remote-build --launchpad-accept-public-upload --build-for=armhf 2>&1)
           EXIT_CODE=$?
           set -e # Re-enable auto-exit
-          
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "$OUTPUT" # Print the full log for debugging
+          echo "$OUTPUT" # Print the full log for debugging
+
+          if ls ./*.snap >/dev/null 2>&1; then
+            # The build artifact is present.  snapcraft remote-build sometimes
+            # still exits non-zero because of a transient glitch while fetching
+            # the build *logs* from Launchpad AFTER a successful build+download
+            # (e.g. "RemoteDisconnected ... fetching build logs"); that must not
+            # fail the job when the snap itself was produced.
+            if [ $EXIT_CODE -ne 0 ]; then
+              echo "::warning::snapcraft remote-build exited ${EXIT_CODE}, but the armhf snap was produced; treating as success."
+            fi
+          else
             if echo "$OUTPUT" | grep -iqE "macaroon|unauthorized|authentication|login|credentials"; then
               echo "::error::Secrets are invalid or expired. Launchpad authentication failed."
             else
-              echo "::error::Launchpad build failed due to a code compilation error or infrastructure issue."
+              echo "::error::Launchpad build failed (no snap artifact produced)."
             fi
-            exit $EXIT_CODE
+            exit "${EXIT_CODE:-1}"
           fi
 
       - name: Smoke test (armhf, emulated)
