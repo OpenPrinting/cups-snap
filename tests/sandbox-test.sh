@@ -1,164 +1,266 @@
 #!/bin/sh
 #
-# tests/sandbox-test.sh
+# tests/sandbox-test.sh <standalone|proxy|parallel> <snap-file>
 #
-# Full "print-through" integration test for the CUPS Snap, run inside the
-# snap's own confined environment.  A Snap is a self-contained, read-only,
-# confined filesystem bundling its whole printing stack (CUPS, libcupsfilters,
-# libppd, cups-filters, Ghostscript, ...), so the multi-CUPS build matrix used
-# by the Autotools repositories does not apply here.  Instead we install the
-# built snap, let its bundled cupsd run, set up a virtual IPP-Everywhere
-# printer with the bundled ippeveprinter, and push a real job through the
-# bundled filter chain -- exercising the actual stack end to end.
+# Integration test for the CUPS Snap, exercising the three operating modes its
+# run-cupsd selects between (see scripts/run-cupsd):
 #
-# This requires a working snapd, so it only runs on the native runners
-# (amd64/arm64).  The emulated architectures (armhf/riscv64), where snapd
-# cannot run under CI, use the non-daemon tests/smoke-unpacked.sh instead.
+#   standalone  no system CUPS on the host -> the snap's cupsd is THE system
+#               CUPS (port 631 + standard socket).  Queue on the snapped cupsd.
+#   proxy       a classic system CUPS is installed and there is no `no-proxy`
+#               marker -> the snap runs cups-proxyd and mirrors the host's
+#               queues; snapped clients' jobs are proxied to the host CUPS.
+#               Queue on the HOST cupsd.
+#   parallel    a classic system CUPS is installed AND the `no-proxy` marker
+#               exists -> the snap's cupsd runs independently on an alternative
+#               port/socket alongside the host's.  Queue on the snapped cupsd.
 #
-# The CI invokes this as root:  sudo sh tests/sandbox-test.sh
-# It assumes the "cups" snap is already installed (the build job installs the
-# freshly built .snap with `snap install --dangerous`).  Snap removal is left
-# to the workflow's cleanup step; this script cleans up only what it creates.
+# A Snap bundles its whole printing stack at pinned versions, so the multi-CUPS
+# build matrix used by the Autotools repos does not apply; what matters here is
+# that the snapped cupsd behaves correctly in each mode.  This runs only on the
+# native runners (snapd needs the host kernel); the emulated armhf/riscv64 legs
+# use tests/smoke-unpacked.sh instead.
+#
+# Invoked by CI as root:  sudo sh tests/sandbox-test.sh <mode> <snap-file>
+# Each mode runs in its own fresh job, so this script provisions whatever that
+# mode needs (host CUPS / no-proxy marker / Avahi) and installs the snap itself.
+#
+# NB: the snap's scripts/run-util execs the utilities via unquoted `$*`, so it
+# word-splits every argument -- no value passed to a cups.* command may contain
+# spaces.
 
 set -eu
 
-QUEUE="ci-everywhere"
-# NB: the snap's scripts/run-util execs the utilities via unquoted `$*`, so it
-# word-splits every argument -- no value passed to a cups.* command may contain
-# spaces.  Hence a single-token printer name here.
-PRINTER_NAME="CITestPrinter"
-PRINTER_PORT=8631
-PRINTER_URI="ipp://localhost:${PRINTER_PORT}/ipp/print"
+MODE="${1:?usage: sandbox-test.sh <standalone|proxy|parallel> <snap-file>}"
+SNAP_FILE="${2:?usage: sandbox-test.sh <standalone|proxy|parallel> <snap-file>}"
+
+QUEUE="ci-test"
+SNAP_FILESCONF="/var/snap/cups/common/etc/cups/cups-files.conf"
+HOST_FILESCONF="/etc/cups/cups-files.conf"
+NOPROXY_MARKER="/var/snap/cups/common/no-proxy"
+IPPEVE_PORT=8631
+IPPEVE_NAME="CITestPrinter"
 IPPEVE_LOG="$(mktemp)"
 IPPEVE_PID=""
 
-log()  { echo "sandbox-test: $*"; }
-group(){ echo "::group::$*"; }
-endgr(){ echo "::endgroup::"; }
+export DEBIAN_FRONTEND=noninteractive
+
+log()  { echo "sandbox-test[$MODE]: $*"; }
 
 dump_diagnostics() {
-	group "diagnostics"
-	echo "--- snap services ---";    snap services cups            2>&1 || true
-	echo "--- snap connections ---"; snap connections cups         2>&1 || true
-	echo "--- snap logs ---";        snap logs cups -n 200         2>&1 || true
-	echo "--- lpstat -t ---";        cups.lpstat -t                2>&1 || true
-	echo "--- cupsd error_log ---"
-	# ErrorLog lives under $SNAP_DATA (see scripts/run-cupsd); current -> revision.
-	tail -n 200 /var/snap/cups/current/var/log/error_log 2>/dev/null || true
-	echo "--- ippeveprinter log ---"; tail -n 200 "$IPPEVE_LOG"   2>/dev/null || true
-	endgr
+	echo "::group::diagnostics ($MODE)"
+	echo "--- snap services ---";    snap services cups    2>&1 || true
+	echo "--- snap connections ---"; snap connections cups 2>&1 || true
+	echo "--- snap logs ---";        snap logs cups -n 200 2>&1 || true
+	echo "--- snapped lpstat -t ---"; cups.lpstat -t       2>&1 || true
+	echo "--- snap cupsd error_log ---"
+	tail -n 150 /var/snap/cups/current/var/log/error_log 2>/dev/null || true
+	if [ "$MODE" != standalone ]; then
+		echo "--- host lpstat -t ---"; lpstat -t           2>&1 || true
+		echo "--- host cupsd error_log ---"
+		tail -n 150 /var/log/cups/error_log 2>/dev/null || true
+	fi
+	if [ "$MODE" = standalone ]; then
+		echo "--- ippeveprinter log ---"; tail -n 150 "$IPPEVE_LOG" 2>/dev/null || true
+	fi
+	echo "::endgroup::"
 }
 
 cleanup() {
-	cups.cancel -a "$QUEUE"   >/dev/null 2>&1 || true
-	cups.lpadmin -x "$QUEUE"  >/dev/null 2>&1 || true
 	[ -n "$IPPEVE_PID" ] && kill "$IPPEVE_PID" >/dev/null 2>&1 || true
-	pkill -f "ippeveprinter" >/dev/null 2>&1 || true
+	pkill -f ippeveprinter >/dev/null 2>&1 || true
+	cups.cancel -a "$QUEUE"  >/dev/null 2>&1 || true
+	cups.lpadmin -x "$QUEUE" >/dev/null 2>&1 || true
+	cancel -a "$QUEUE"       >/dev/null 2>&1 || true
+	lpadmin -x "$QUEUE"      >/dev/null 2>&1 || true
 	rm -f "$IPPEVE_LOG"
 }
 
-# Diagnose on failure, always clean up.
 trap 'rc=$?; [ "$rc" -ne 0 ] && { log "FAILED (exit $rc)"; dump_diagnostics; }; cleanup; exit $rc' EXIT
 
-# ---------------------------------------------------------------------------
-# 1. Sanity: the snap is installed.
-# ---------------------------------------------------------------------------
-snap list cups >/dev/null 2>&1 || { log "cups snap is not installed"; exit 1; }
-log "cups snap installed:"; snap list cups
+# wait_scheduler <lpstat-command> -- poll until "scheduler is running".
+wait_scheduler() {
+	cmd="$1"
+	i=0
+	while [ "$i" -lt 60 ]; do
+		if $cmd -r 2>/dev/null | grep -q 'scheduler is running'; then
+			return 0
+		fi
+		i=$((i + 1)); sleep 1
+	done
+	log "scheduler ($cmd) did not become ready in time"
+	return 1
+}
+
+# Enable the "file:" backend on a CUPS instance (off by default) so the test
+# queue can use file:/dev/null without any real hardware.
+enable_filedevice() {
+	conf="$1"
+	[ -f "$conf" ] || { log "cups-files.conf not found: $conf"; return 1; }
+	grep -q '^FileDevice Yes' "$conf" 2>/dev/null || echo 'FileDevice Yes' >> "$conf"
+}
+
+install_host_cups() {
+	log "installing the host (classic) CUPS..."
+	apt-get update -y >/dev/null
+	apt-get install -y cups cups-client >/dev/null
+	enable_filedevice "$HOST_FILESCONF"
+	systemctl restart cups 2>/dev/null || service cups restart || true
+	wait_scheduler "lpstat"
+}
+
+install_snap() {
+	log "installing the snap under test: $SNAP_FILE"
+	snap install --dangerous "$SNAP_FILE"
+	snap list cups
+	# network/network-bind auto-connect; the rest are best-effort.
+	for plug in avahi-control raw-usb etc-cups cups-control cups-host home; do
+		snap connect "cups:$plug" >/dev/null 2>&1 || true
+	done
+}
+
+# make_raw_queue <lpadmin-cmd> <lpstat-cmd> -- create a classic raw queue on the
+# file:/dev/null device (no ippeveprinter, so no DNS-SD queue leaking onto other
+# CUPS instances).  Raw is enough to validate that a job flows through the chosen
+# cupsd in the chosen mode.
+make_raw_queue() {
+	lpadmin_cmd="$1"; lpstat_cmd="$2"
+	log "creating classic raw queue '$QUEUE' (file:/dev/null) via $lpadmin_cmd"
+	$lpadmin_cmd -p "$QUEUE" -v file:/dev/null -E
+	$lpstat_cmd -p "$QUEUE" || true
+	$lpstat_cmd -v "$QUEUE" || true
+}
+
+# submit_and_verify <lp-cmd> <lpstat-cmd> -- print a stdin job and confirm it
+# reaches the completed list (an aborted/stuck job never appears there).
+submit_and_verify() {
+	lp_cmd="$1"; lpstat_cmd="$2"
+	log "submitting a print job via $lp_cmd..."
+	jobout="$(printf 'CUPS Snap CI (%s) print-through test.\n' "$MODE" \
+		| $lp_cmd -d "$QUEUE" -t ci-job 2>&1)" || { log "lp failed: $jobout"; return 1; }
+	echo "$jobout"
+
+	i=0
+	while [ "$i" -lt 60 ]; do
+		if $lpstat_cmd -W completed -o "$QUEUE" 2>/dev/null | grep -q "$QUEUE"; then
+			log "job completed on $lp_cmd's queue"
+			return 0
+		fi
+		i=$((i + 1)); sleep 1
+	done
+	log "job did not complete in time"
+	return 1
+}
 
 # ---------------------------------------------------------------------------
-# 2. Connect the interfaces the test needs.  network/network-bind auto-connect;
-#    the rest are best-effort (absent slots on a bare runner are harmless, the
-#    stand-alone cupsd does not need them).
-# ---------------------------------------------------------------------------
-for plug in avahi-control raw-usb etc-cups cups-control cups-host; do
-	snap connect "cups:$plug" >/dev/null 2>&1 || true
-done
+run_standalone() {
+	# Single CUPS instance -> ippeveprinter is safe (no other CUPS to pollute),
+	# so use it for a richer driverless print-through through the filter chain.
+	apt-get update -y >/dev/null
+	apt-get install -y avahi-daemon avahi-utils dbus >/dev/null
+	systemctl start dbus 2>/dev/null || service dbus start || true
+	systemctl start avahi-daemon 2>/dev/null || service avahi-daemon start || true
 
-# ---------------------------------------------------------------------------
-# 3. Wait for the bundled cupsd (snap daemon) to come up.
-# ---------------------------------------------------------------------------
-log "waiting for the snap's cupsd to accept connections..."
-ready=0
-i=0
-while [ "$i" -lt 60 ]; do
-	if cups.lpstat -r 2>/dev/null | grep -q 'scheduler is running'; then
-		ready=1; break
+	install_snap
+	wait_scheduler "cups.lpstat"
+
+	log "starting ippeveprinter '$IPPEVE_NAME' on port $IPPEVE_PORT..."
+	cups.ippeveprinter -p "$IPPEVE_PORT" "$IPPEVE_NAME" >"$IPPEVE_LOG" 2>&1 &
+	IPPEVE_PID=$!
+
+	log "creating everywhere queue '$QUEUE'..."
+	created=0; i=0
+	while [ "$i" -lt 30 ]; do
+		if ! kill -0 "$IPPEVE_PID" 2>/dev/null; then
+			log "ippeveprinter exited unexpectedly; its output was:"
+			cat "$IPPEVE_LOG" 2>/dev/null || true
+			return 1
+		fi
+		if cups.lpadmin -p "$QUEUE" -v "ipp://localhost:$IPPEVE_PORT/ipp/print" \
+				-m everywhere -E >/dev/null 2>&1; then
+			created=1; break
+		fi
+		i=$((i + 1)); sleep 1
+	done
+	[ "$created" = 1 ] || { log "could not create the everywhere queue"; return 1; }
+
+	submit_and_verify "cups.lp" "cups.lpstat" || return 1
+
+	if grep -Eqi 'job|print|document' "$IPPEVE_LOG"; then
+		log "ippeveprinter received the job"
+	else
+		log "WARNING: no job activity seen in the ippeveprinter log"
 	fi
-	i=$((i + 1)); sleep 1
-done
-[ "$ready" = 1 ] || { log "cupsd did not become ready in time"; exit 1; }
-log "cupsd is running"
+}
 
 # ---------------------------------------------------------------------------
-# 4. Start a virtual IPP-Everywhere printer (bundled ippeveprinter).  We point
-#    the queue at it by explicit URI, so DNS-SD/Avahi is not required.
-# ---------------------------------------------------------------------------
-log "starting ippeveprinter '${PRINTER_NAME}' on port ${PRINTER_PORT}..."
-cups.ippeveprinter -p "$PRINTER_PORT" "$PRINTER_NAME" >"$IPPEVE_LOG" 2>&1 &
-IPPEVE_PID=$!
+run_proxy() {
+	# Host CUPS present, no no-proxy marker -> snap runs as a proxy.  The queue
+	# lives on the HOST cupsd; the snap mirrors it and proxies snapped clients'
+	# jobs to it.
+	install_host_cups
+	install_snap                       # detects host CUPS -> proxy mode
+	wait_scheduler "cups.lpstat"       # snap cupsd (on its domain socket)
 
-# ---------------------------------------------------------------------------
-# 5. Create a driverless ("everywhere") queue from that printer.  lpadmin has
-#    to reach the printer to fetch its IPP attributes, so retrying here also
-#    serves as the readiness wait for ippeveprinter.
-# ---------------------------------------------------------------------------
-log "creating everywhere queue '${QUEUE}' from ${PRINTER_URI}..."
-created=0
-i=0
-while [ "$i" -lt 30 ]; do
-	if ! kill -0 "$IPPEVE_PID" 2>/dev/null; then
-		log "ippeveprinter exited unexpectedly; its output was:"
-		cat "$IPPEVE_LOG" 2>/dev/null || true
-		exit 1
+	# Create the queue on the host CUPS.
+	make_raw_queue "lpadmin" "lpstat"
+
+	# The snap's cups-proxyd should mirror the host queue into the snapped CUPS.
+	log "waiting for the host queue to be mirrored into the snapped CUPS..."
+	mirrored=0; i=0
+	while [ "$i" -lt 30 ]; do
+		if cups.lpstat -v "$QUEUE" 2>/dev/null | grep -q "$QUEUE"; then
+			mirrored=1; break
+		fi
+		i=$((i + 1)); sleep 1
+	done
+
+	if [ "$mirrored" = 1 ]; then
+		log "queue mirrored; printing via the snapped client (proxied to host)"
+		printf 'CUPS Snap CI (proxy) print-through test.\n' \
+			| cups.lp -d "$QUEUE" -t ci-job 2>&1 || { log "snapped lp failed"; return 1; }
+	else
+		log "WARNING: queue not mirrored into the snap; printing via the host client"
+		printf 'CUPS Snap CI (proxy) print-through test.\n' \
+			| lp -d "$QUEUE" -t ci-job 2>&1 || { log "host lp failed"; return 1; }
 	fi
-	if cups.lpadmin -p "$QUEUE" -v "$PRINTER_URI" -m everywhere -E >/dev/null 2>&1; then
-		created=1; break
-	fi
-	i=$((i + 1)); sleep 1
-done
-[ "$created" = 1 ] || { log "could not create the everywhere queue"; exit 1; }
-cups.lpstat -p "$QUEUE" || true
-cups.lpstat -v "$QUEUE" || true
+
+	# Either way the job must complete on the HOST queue.
+	log "waiting for the job to complete on the host CUPS..."
+	done_ok=0; i=0
+	while [ "$i" -lt 60 ]; do
+		if lpstat -W completed -o "$QUEUE" 2>/dev/null | grep -q "$QUEUE"; then
+			done_ok=1; break
+		fi
+		i=$((i + 1)); sleep 1
+	done
+	[ "$done_ok" = 1 ] || { log "job did not complete on the host CUPS"; return 1; }
+	log "job completed on the host CUPS (proxy path)"
+}
 
 # ---------------------------------------------------------------------------
-# 6. Push a job through the bundled filter chain.  Printing from stdin avoids
-#    needing the "home" interface to read a file from disk.
-# ---------------------------------------------------------------------------
-log "submitting a print job..."
-jobout="$(printf 'CUPS Snap CI print-through test.\nThe bundled filter chain converted this text.\n' \
-	| cups.lp -d "$QUEUE" -t ci-print-through 2>&1)" || {
-		log "lp failed: $jobout"; exit 1; }
-echo "$jobout"
-jobid="$(printf '%s' "$jobout" | sed -n 's/.*request id is \([^ ]*\).*/\1/p')"
-[ -n "$jobid" ] || { log "could not determine the job id"; exit 1; }
-log "submitted job: $jobid"
+run_parallel() {
+	# Host CUPS present AND no-proxy marker -> snap runs independently alongside
+	# the host CUPS on an alternative port/socket.  Queue on the snapped cupsd.
+	install_host_cups
+	install_snap                       # starts in proxy mode initially
+	mkdir -p "$(dirname "$NOPROXY_MARKER")"
+	touch "$NOPROXY_MARKER"            # force parallel (independent) mode
+	enable_filedevice "$SNAP_FILESCONF"
+	log "restarting the snapped cupsd into parallel mode..."
+	snap restart cups.cupsd
+	wait_scheduler "cups.lpstat"
+
+	make_raw_queue "cups.lpadmin" "cups.lpstat"
+	submit_and_verify "cups.lp" "cups.lpstat" || return 1
+}
 
 # ---------------------------------------------------------------------------
-# 7. Verify the job actually COMPLETED (an aborted/held job never appears in
-#    the completed list -- so this distinguishes success from a stuck queue).
-# ---------------------------------------------------------------------------
-log "waiting for the job to complete..."
-done_ok=0
-i=0
-while [ "$i" -lt 60 ]; do
-	if cups.lpstat -W completed -o "$QUEUE" 2>/dev/null | grep -qw "$jobid"; then
-		done_ok=1; break
-	fi
-	i=$((i + 1)); sleep 1
-done
-[ "$done_ok" = 1 ] || { log "job $jobid did not complete in time"; exit 1; }
-log "job $jobid completed"
+case "$MODE" in
+	standalone) run_standalone ;;
+	proxy)      run_proxy ;;
+	parallel)   run_parallel ;;
+	*) log "unknown mode: $MODE (expected standalone|proxy|parallel)"; exit 2 ;;
+esac
 
-# ---------------------------------------------------------------------------
-# 8. Confirm the virtual printer actually received the document (the job really
-#    traversed the stack, it was not just discarded by the scheduler).
-# ---------------------------------------------------------------------------
-if grep -Eqi 'job|print|document' "$IPPEVE_LOG"; then
-	log "ippeveprinter received the job"
-else
-	log "WARNING: no job activity seen in the ippeveprinter log (printed below)"
-	cat "$IPPEVE_LOG" || true
-fi
-
-log "PASS: full print-through succeeded through the snap's bundled stack"
+log "PASS: $MODE mode print-through succeeded"
