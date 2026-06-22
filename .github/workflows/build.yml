@@ -41,21 +41,20 @@ jobs:
         with:
           path: .
 
-      - name: Install built snap (smoke test setup)
+      - name: Install built snap
         run: |
           set -e
           SNAP_FILE="${{ steps.snapcraft.outputs.snap }}"
           echo "Installing snap: ${SNAP_FILE}"
           sudo snap install --dangerous "${SNAP_FILE}"
+          snap list | grep "^cups " || (echo "CUPS snap not found in snap list"; exit 1)
 
-      - name: Run smoke tests
+      - name: Sandbox integration test (full print-through)
         run: |
           set -e
-          echo "Checking snap list..."
-          snap list | grep "^cups " || (echo "CUPS snap not found in snap list"; exit 1)
-          
-          echo "Testing ghostscript binary..."
-          snap run cups.gs -h || true
+          # Drives a real driverless print job through the snap's bundled
+          # cupsd + filter chain.  Needs root for `snap connect`.
+          sudo sh tests/sandbox-test.sh
 
       - name: Cleanup - Remove installed snap
         if: always()
