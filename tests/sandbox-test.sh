@@ -23,6 +23,10 @@
 set -eu
 
 QUEUE="ci-everywhere"
+# NB: the snap's scripts/run-util execs the utilities via unquoted `$*`, so it
+# word-splits every argument -- no value passed to a cups.* command may contain
+# spaces.  Hence a single-token printer name here.
+PRINTER_NAME="CITestPrinter"
 PRINTER_PORT=8631
 PRINTER_URI="ipp://localhost:${PRINTER_PORT}/ipp/print"
 IPPEVE_LOG="$(mktemp)"
@@ -90,8 +94,8 @@ log "cupsd is running"
 # 4. Start a virtual IPP-Everywhere printer (bundled ippeveprinter).  We point
 #    the queue at it by explicit URI, so DNS-SD/Avahi is not required.
 # ---------------------------------------------------------------------------
-log "starting ippeveprinter on port ${PRINTER_PORT}..."
-cups.ippeveprinter -p "$PRINTER_PORT" "CI Everywhere Printer" >"$IPPEVE_LOG" 2>&1 &
+log "starting ippeveprinter '${PRINTER_NAME}' on port ${PRINTER_PORT}..."
+cups.ippeveprinter -p "$PRINTER_PORT" "$PRINTER_NAME" >"$IPPEVE_LOG" 2>&1 &
 IPPEVE_PID=$!
 
 # ---------------------------------------------------------------------------
@@ -103,8 +107,12 @@ log "creating everywhere queue '${QUEUE}' from ${PRINTER_URI}..."
 created=0
 i=0
 while [ "$i" -lt 30 ]; do
-	if kill -0 "$IPPEVE_PID" 2>/dev/null && \
-	   cups.lpadmin -p "$QUEUE" -v "$PRINTER_URI" -m everywhere -E >/dev/null 2>&1; then
+	if ! kill -0 "$IPPEVE_PID" 2>/dev/null; then
+		log "ippeveprinter exited unexpectedly; its output was:"
+		cat "$IPPEVE_LOG" 2>/dev/null || true
+		exit 1
+	fi
+	if cups.lpadmin -p "$QUEUE" -v "$PRINTER_URI" -m everywhere -E >/dev/null 2>&1; then
 		created=1; break
 	fi
 	i=$((i + 1)); sleep 1
