@@ -308,7 +308,7 @@ wait $CUPS_PID
 # Remove CUPS PID file as process is done
 rm -f $SNAP_DATA/var/run/cupsd.pid
 
-if [ -r $SNAP_DATA/var/run/cups-proxyd.pid && kill -0 "${PROXYD_PID}" 2>/dev/null]; then
+if [ -r "$SNAP_DATA/var/run/cups-proxyd.pid" ] && kill -0 "${PROXYD_PID}" 2>/dev/null; then
     # Kill cups-proxyd if not already terminated by stop-cupsd
     kill -KILL $PROXYD_PID
 fi
