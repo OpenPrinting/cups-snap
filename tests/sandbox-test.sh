@@ -35,6 +35,9 @@ MODE="${1:?usage: sandbox-test.sh <standalone|proxy|parallel> <snap-file>}"
 SNAP_FILE="${2:?usage: sandbox-test.sh <standalone|proxy|parallel> <snap-file>}"
 
 QUEUE="ci-test"
+# Generic PostScript PPD shipped next to this script.  cups-proxyd cannot clone
+# a raw queue (it needs a PPD), so the proxy test creates the host queue with it.
+GENERIC_PPD="$(dirname "$0")/ci-generic.ppd"
 SNAP_FILESCONF="/var/snap/cups/common/etc/cups/cups-files.conf"
 HOST_FILESCONF="/etc/cups/cups-files.conf"
 NOPROXY_MARKER="/var/snap/cups/common/no-proxy"
@@ -207,8 +210,14 @@ run_proxy() {
 
 	# Create the queue on the host CUPS *before* cups-proxyd starts, so its
 	# start-up "sync with current state" (see cups-proxyd.c) mirrors an already
-	# existing queue -- rather than relying on a live notification.
-	make_raw_queue "lpadmin" "lpstat"
+	# existing queue -- rather than relying on a live notification.  Use a PPD
+	# (not a raw queue): cups-proxyd cannot clone raw queues ("Unable to load
+	# PPD ... Bad Request"), it needs the PPD to replicate the queue.
+	log "creating classic PPD queue '$QUEUE' on the host (file:/dev/null)..."
+	[ -f "$GENERIC_PPD" ] || { log "generic PPD not found: $GENERIC_PPD"; return 1; }
+	lpadmin -p "$QUEUE" -P "$GENERIC_PPD" -v file:/dev/null -E
+	lpstat -p "$QUEUE" || true
+	lpstat -v "$QUEUE" || true
 
 	install_snap                       # snap detects host CUPS -> proxy mode
 	# cups-proxyd is spawned by run-cupsd, but at first install it started before
