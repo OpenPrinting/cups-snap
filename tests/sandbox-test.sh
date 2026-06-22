@@ -38,8 +38,6 @@ QUEUE="ci-test"
 # Generic PostScript PPD shipped next to this script.  cups-proxyd cannot clone
 # a raw queue (it needs a PPD), so the proxy test creates the host queue with it.
 GENERIC_PPD="$(dirname "$0")/ci-generic.ppd"
-SNAP_FILESCONF="/var/snap/cups/common/etc/cups/cups-files.conf"
-HOST_FILESCONF="/etc/cups/cups-files.conf"
 NOPROXY_MARKER="/var/snap/cups/common/no-proxy"
 IPPEVE_PORT=8631
 IPPEVE_NAME="CITestPrinter"
@@ -109,19 +107,10 @@ wait_scheduler() {
 	return 1
 }
 
-# Enable the "file:" backend on a CUPS instance (off by default) so the test
-# queue can use file:/dev/null without any real hardware.
-enable_filedevice() {
-	conf="$1"
-	[ -f "$conf" ] || { log "cups-files.conf not found: $conf"; return 1; }
-	grep -q '^FileDevice Yes' "$conf" 2>/dev/null || echo 'FileDevice Yes' >> "$conf"
-}
-
 install_host_cups() {
 	log "installing the host (classic) CUPS..."
 	apt-get update -y >/dev/null
 	apt-get install -y cups cups-client >/dev/null
-	enable_filedevice "$HOST_FILESCONF"
 	systemctl restart cups 2>/dev/null || service cups restart || true
 	wait_scheduler "lpstat"
 }
@@ -311,7 +300,6 @@ run_parallel() {
 	wait_scheduler "cups.lpstat"
 	mkdir -p "$(dirname "$NOPROXY_MARKER")"
 	touch "$NOPROXY_MARKER"            # force parallel (independent) mode
-	enable_filedevice "$SNAP_FILESCONF"
 	log "restarting the snapped cupsd into parallel mode..."
 	snap restart cups.cupsd
 	wait_scheduler "cups.lpstat"
