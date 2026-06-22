@@ -264,6 +264,9 @@ run_parallel() {
 	# the host CUPS on an alternative port/socket.  Queue on the snapped cupsd.
 	install_host_cups
 	install_snap                       # starts in proxy mode initially
+	# Wait for the snap's first-run init to create cups-files.conf before we edit
+	# it (the file appears only once the snapped cupsd has started).
+	wait_scheduler "cups.lpstat"
 	mkdir -p "$(dirname "$NOPROXY_MARKER")"
 	touch "$NOPROXY_MARKER"            # force parallel (independent) mode
 	enable_filedevice "$SNAP_FILESCONF"
