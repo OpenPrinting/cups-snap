@@ -56,6 +56,33 @@ export DEBIAN_FRONTEND=noninteractive
 
 log()  { echo "sandbox-test[$MODE]: $*"; }
 
+# retry <attempts> <label> <cmd...> -- run cmd (a program or a shell function),
+# retrying every second until it succeeds or <attempts> is reached.  This is the
+# single primitive used for every operation that can fail on a transient state:
+# daemon churn after `snap restart`, a queue not yet registered, apt/network
+# hiccups, etc.  Output of the attempts is suppressed; callers log around it.
+retry() {
+	attempts="$1"; label="$2"; shift 2
+	n=1
+	while :; do
+		if "$@" >/dev/null 2>&1; then
+			[ "$n" -gt 1 ] && log "ok after $n attempts: $label"
+			return 0
+		fi
+		if [ "$n" -ge "$attempts" ]; then
+			log "giving up after $attempts attempts: $label"
+			return 1
+		fi
+		n=$((n + 1)); sleep 1
+	done
+}
+
+# apt_install <pkg...> -- update + install with retries (CI mirrors flake).
+apt_install() {
+	retry 5 "apt-get update" apt-get update -y
+	retry 5 "apt-get install $*" apt-get install -y "$@"
+}
+
 dump_diagnostics() {
 	echo "::group::diagnostics ($MODE)"
 	echo "--- snap services ---";    snap services cups    2>&1 || true
@@ -91,33 +118,40 @@ cleanup() {
 
 trap 'rc=$?; [ "$rc" -ne 0 ] && { log "FAILED (exit $rc)"; dump_diagnostics; }; cleanup; exit $rc' EXIT
 
-# wait_scheduler <lpstat-command> -- poll until the scheduler is reachable.
-# Use the exit code of `lpstat -r` (0 when the scheduler is running), not its
-# printed message, which may change in future CUPS versions.
+# wait_scheduler <lpstat-command> -- wait until the scheduler is *stably* up.
+# Uses the exit code of `lpstat -r` (0 when running), not its printed message
+# (which can change between CUPS versions).  The snapped cupsd briefly churns
+# right after `snap install`/`snap restart` (its stop-command restarts the
+# service), so a single successful poll is not enough: require several
+# consecutive successes and reset the streak on any failure, so we only proceed
+# once the daemon has settled.
 wait_scheduler() {
 	cmd="$1"
-	i=0
-	while [ "$i" -lt 60 ]; do
+	streak=0; i=0
+	while [ "$i" -lt 90 ]; do
 		if $cmd -r >/dev/null 2>&1; then
-			return 0
+			streak=$((streak + 1))
+			[ "$streak" -ge 3 ] && return 0
+		else
+			streak=0
 		fi
 		i=$((i + 1)); sleep 1
 	done
-	log "scheduler ($cmd) did not become ready in time"
+	log "scheduler ($cmd) did not become stably ready in time"
 	return 1
 }
 
 install_host_cups() {
 	log "installing the host (classic) CUPS..."
-	apt-get update -y >/dev/null
-	apt-get install -y cups cups-client >/dev/null
+	apt_install cups cups-client
 	systemctl restart cups 2>/dev/null || service cups restart || true
 	wait_scheduler "lpstat"
 }
 
 install_snap() {
 	log "installing the snap under test: $SNAP_FILE"
-	snap install --dangerous "$SNAP_FILE"
+	retry 5 "snap install" snap install --dangerous "$SNAP_FILE" || {
+		log "snap install failed"; return 1; }
 	snap list cups
 	# network/network-bind auto-connect; the rest are best-effort.
 	for plug in avahi-control raw-usb etc-cups cups-control cups-host home; do
@@ -130,7 +164,7 @@ install_snap() {
 # hardware-free print sink plus a verifiable artifact, and avoids the file:
 # backend (gone in newer CUPS) entirely.
 start_socket_printer() {
-	command -v nc >/dev/null 2>&1 || apt-get install -y netcat-openbsd >/dev/null
+	command -v nc >/dev/null 2>&1 || apt_install netcat-openbsd
 	log "starting socket printer on port $SOCKET_PORT (nc)..."
 	nc -l -k "$SOCKET_PORT" > "$PRINT_OUTPUT" 2>/dev/null &
 	NC_PID=$!
@@ -160,38 +194,47 @@ verify_output() {
 make_raw_queue() {
 	lpadmin_cmd="$1"; lpstat_cmd="$2"
 	log "creating classic raw queue '$QUEUE' ($PRINTER_URI) via $lpadmin_cmd"
-	$lpadmin_cmd -p "$QUEUE" -v "$PRINTER_URI" -E
+	retry 30 "lpadmin create $QUEUE" \
+		$lpadmin_cmd -p "$QUEUE" -v "$PRINTER_URI" -E || return 1
 	$lpstat_cmd -p "$QUEUE" || true
 	$lpstat_cmd -v "$QUEUE" || true
 }
 
-# submit_and_verify <lp-cmd> <lpstat-cmd> -- print a stdin job and confirm it
-# reaches the completed list (an aborted/stuck job never appears there).
-submit_and_verify() {
-	lp_cmd="$1"; lpstat_cmd="$2"
-	log "submitting a print job via $lp_cmd..."
-	jobout="$(printf 'CUPS Snap CI (%s) print-through test.\n' "$MODE" \
-		| $lp_cmd -d "$QUEUE" -t ci-job 2>&1)" || { log "lp failed: $jobout"; return 1; }
-	echo "$jobout"
+# submit_one <lp-cmd> -- print a single stdin job (used via retry()).
+submit_one() {
+	printf 'CUPS Snap CI (%s) print-through test.\n' "$MODE" \
+		| "$1" -d "$QUEUE" -t ci-job
+}
 
+# wait_completed <lpstat-cmd> -- wait until a job for QUEUE reaches the completed
+# list (an aborted/stuck job never appears there, so this proves real progress).
+wait_completed() {
+	lpstat_cmd="$1"
 	i=0
 	while [ "$i" -lt 60 ]; do
 		if $lpstat_cmd -W completed -o "$QUEUE" 2>/dev/null | grep -q "$QUEUE"; then
-			log "job completed on $lp_cmd's queue"
 			return 0
 		fi
 		i=$((i + 1)); sleep 1
 	done
-	log "job did not complete in time"
 	return 1
+}
+
+# submit_and_verify <lp-cmd> <lpstat-cmd> -- submit (with retry) then confirm
+# the job completed.
+submit_and_verify() {
+	lp_cmd="$1"; lpstat_cmd="$2"
+	log "submitting a print job via $lp_cmd..."
+	retry 30 "submit job via $lp_cmd" submit_one "$lp_cmd" || return 1
+	wait_completed "$lpstat_cmd" || { log "job did not complete in time"; return 1; }
+	log "job completed on $lp_cmd's queue"
 }
 
 # ---------------------------------------------------------------------------
 run_standalone() {
 	# Single CUPS instance -> ippeveprinter is safe (no other CUPS to pollute),
 	# so use it for a richer driverless print-through through the filter chain.
-	apt-get update -y >/dev/null
-	apt-get install -y avahi-daemon avahi-utils dbus >/dev/null
+	apt_install avahi-daemon avahi-utils dbus
 	systemctl start dbus 2>/dev/null || service dbus start || true
 	systemctl start avahi-daemon 2>/dev/null || service avahi-daemon start || true
 
@@ -245,7 +288,8 @@ run_proxy() {
 	# PPD ... Bad Request"), it needs the PPD to replicate the queue.
 	log "creating classic PPD queue '$QUEUE' on the host ($PRINTER_URI)..."
 	[ -f "$GENERIC_PPD" ] || { log "generic PPD not found: $GENERIC_PPD"; return 1; }
-	lpadmin -p "$QUEUE" -P "$GENERIC_PPD" -v "$PRINTER_URI" -E
+	retry 30 "lpadmin create host $QUEUE" \
+		lpadmin -p "$QUEUE" -P "$GENERIC_PPD" -v "$PRINTER_URI" -E || return 1
 	lpstat -p "$QUEUE" || true
 	lpstat -v "$QUEUE" || true
 
@@ -255,7 +299,10 @@ run_proxy() {
 	# Restart now that cups-host is connected and the host queue exists, so its
 	# start-up sync mirrors the queue.
 	log "restarting the snapped cupsd so cups-proxyd syncs the host queues..."
-	snap restart cups.cupsd
+	# The snap's stop-command can make `snap restart` report failure even when
+	# the service comes back up, so don't trust its exit code -- gate on
+	# wait_scheduler (stable readiness) instead.
+	snap restart cups.cupsd || true
 	wait_scheduler "cups.lpstat"       # snap cupsd (on its domain socket)
 
 	# Require the host queue to be mirrored into the snapped CUPS (proxy:// device).
@@ -272,19 +319,11 @@ run_proxy() {
 
 	# Print via the SNAPPED client; the job must traverse the proxy to the host.
 	log "printing via the snapped client (job is proxied to the host CUPS)..."
-	printf 'CUPS Snap CI (proxy) print-through test.\n' \
-		| cups.lp -d "$QUEUE" -t ci-job 2>&1 || { log "snapped lp failed"; return 1; }
+	retry 30 "snapped lp (proxied)" submit_one "cups.lp" || { log "snapped lp failed"; return 1; }
 
 	# The job must complete on the HOST queue (proves the proxy path end to end).
 	log "waiting for the proxied job to complete on the host CUPS..."
-	done_ok=0; i=0
-	while [ "$i" -lt 60 ]; do
-		if lpstat -W completed -o "$QUEUE" 2>/dev/null | grep -q "$QUEUE"; then
-			done_ok=1; break
-		fi
-		i=$((i + 1)); sleep 1
-	done
-	[ "$done_ok" = 1 ] || { log "proxied job did not complete on the host CUPS"; return 1; }
+	wait_completed "lpstat" || { log "proxied job did not complete on the host CUPS"; return 1; }
 	log "proxied job completed on the host CUPS (proxy path verified)"
 	verify_output
 }
@@ -301,7 +340,7 @@ run_parallel() {
 	mkdir -p "$(dirname "$NOPROXY_MARKER")"
 	touch "$NOPROXY_MARKER"            # force parallel (independent) mode
 	log "restarting the snapped cupsd into parallel mode..."
-	snap restart cups.cupsd
+	snap restart cups.cupsd || true   # exit code unreliable; gate on wait_scheduler
 	wait_scheduler "cups.lpstat"
 
 	start_socket_printer
