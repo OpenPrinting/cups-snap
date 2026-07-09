@@ -41,7 +41,14 @@ jobs:
         if: steps.snap-info.outputs.available == 'true'
         run: |
           echo "Downloading from: ${{ steps.snap-info.outputs.url }}"
-          curl -L "${{ steps.snap-info.outputs.url }}" -o cups_riscv64.snap
+          # The Snap Store CDN occasionally throttles or drops the transfer
+          # mid-stream (seen as "curl: (92) HTTP/2 stream ... CANCEL"), which is
+          # transient store-side infra, not a snap problem.  Force HTTP/1.1 to
+          # avoid the HTTP/2 stream-cancel mode, retry on any error, and resume
+          # the partial download instead of restarting from zero.
+          curl -L --http1.1 --retry 5 --retry-all-errors --retry-delay 10 \
+               -C - --connect-timeout 30 \
+               "${{ steps.snap-info.outputs.url }}" -o cups_riscv64.snap
           echo "Download complete."
 
       - name: Install QEMU Emulator & Unpack Tools
