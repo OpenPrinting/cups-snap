@@ -345,7 +345,7 @@ parts:
       - libpaper2
       - libfontconfig1
       - libfreetype6
-      - libpng16-16
+      - libpng16-16t64
     prime:
       - -etc/fonts
       - -var
