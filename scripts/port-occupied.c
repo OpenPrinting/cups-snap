@@ -67,11 +67,11 @@ int main(int argc, char *argv[])
     goto error;
   }
   /* Set SO_REUSEADDR option to allow for a clean host/port unbinding even with
-     pending requests on shutdown of ippusbxd. Otherwise the port will stay
-     unavailable for a certain kernel-defined timeout. See also
+     pending requests on shutdown. Otherwise the port will stay unavailable for
+     a certain kernel-defined timeout. See also
      http://stackoverflow.com/questions/10619952/how-to-completely-destroy-a-socket-connection-in-c */
-  int true = 1;
-  if (setsockopt(this->sd, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(int)) == -1) {
+  int is_true = 1;
+  if (setsockopt(this->sd, SOL_SOCKET, SO_REUSEADDR, &is_true, sizeof(int)) == -1) {
     fprintf(stderr, "IPv4 setting socket options failed.\n");
     goto error;
   }

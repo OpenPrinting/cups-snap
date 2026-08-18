@@ -3,4 +3,8 @@ stage
 prime
 *.snap
 *.tar*
+*.o
+cups-notifier*
+cups-proxyd
+proxy
 snap/.snapcraft

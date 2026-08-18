@@ -1,5 +1,5 @@
 name: cups
-base: core22 # The base Snap is the execution environment for this Snap
+base: core26 # The base Snap is the execution environment for this Snap
 version: '2.4.19-3'
 grade: stable
 summary: CUPS-based printing stack Snap
@@ -13,15 +13,11 @@ assumes: [snapd2.55]
 
 # Only build on the architectures supported
 # Explicit architecture mapping to support both native runners and Launchpad remote-build
-architectures:
-  - build-on: amd64
-    build-for: amd64
-  - build-on: arm64
-    build-for: arm64
-  - build-on: armhf
-    build-for: armhf
-  - build-on: riscv64
-    build-for: riscv64
+platforms:
+  amd64:
+  arm64:
+  armhf:
+  riscv64:
 
 # System user for filters and backends to drop privileges, "lp" is not
 # available in a Snap
@@ -237,8 +233,8 @@ parts:
       - libusb-1.0-0
       - libavahi-common3
       - libavahi-client3
-      - libpaper1
-      - libsnapd-glib1
+      - libpaper2
+      - libsnapd-glib-2-1
     organize:
       var/snap/cups/common/etc: etc
     stage:
@@ -265,31 +261,27 @@ parts:
       - -usr/lib/*/libicutu.*
       - -usr/lib/*/libicui18n.*
 
-  qpdf:
-    source: https://github.com/qpdf/qpdf.git
-    source-tag: 'v11.10.1'
+  pdfio:
+    source: https://github.com/michaelrsweet/pdfio.git
+    source-tag: 'v1.6.4'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
-#     lower-than: '12'
+#     lower-than: '2'
 #     no-9x-revisions: true
-    plugin: cmake
-    cmake-parameters:
-      - -DCMAKE_INSTALL_PREFIX=/usr
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_BUILD_RPATH_USE_ORIGIN=1
-      - -DINSTALL_EXAMPLES=OFF
-      - -DUSE_IMPLICIT_CRYPTO=0
-      - -DREQUIRE_CRYPTO_GNUTLS=1
-      - -DSHOW_FAILED_TEST_OUTPUT=1
+    plugin: autotools
+    autotools-configure-parameters:
+      - --prefix=/
+      - --exec-prefix=/
+      # Prevent the libraries from being put into lib64
+      - --libdir=/lib
+      - --datadir=/share
+      - --datarootdir=/share
+      - --includedir=/include
+      - --sysconfdir=/var/snap/cups/common/etc
     build-packages:
-      - cmake
-      - g++
-      - libjpeg-dev
+      - libpng-dev
       - zlib1g-dev
-      - libgnutls28-dev
-    stage-packages:
-      - libjpeg-turbo8
     stage:
       # The *.la file which gets installed by "make install" contains a
       # wrong prefix, breaking parts of this Snap which use this library
@@ -299,7 +291,7 @@ parts:
       - -var
       - -usr/include
       - -usr/lib/*/pkgconfig
-      - -usr/lib/*/libqpdf.a
+      - -usr/lib/*/libpdfio.a
       - -usr/lib/cmake
       - -share/lintian
       - -usr/share/fonts
@@ -350,7 +342,7 @@ parts:
       # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
     stage-packages:
-      - libpaper1
+      - libpaper2
       - libfontconfig1
       - libfreetype6
       - libpng16-16
@@ -396,25 +388,26 @@ parts:
       - gettext
       - sharutils
       - liblcms2-dev
-      - libpoppler-cpp-dev
       - libpng-dev
       - libjpeg-dev
-      - libtiff5-dev
+      - libtiff-dev
       - zlib1g-dev
       - libfontconfig1-dev
       - libdbus-1-dev
       - libexif-dev
+      - libjxl-dev
+      - poppler-utils
     stage-packages:
-      - libpoppler-cpp0v5
       - libjbig0
       - liblcms2-2
       - libnspr4
       - libnss3
       - libopenjp2-7
-      - libpoppler118
-      - libtiff5
+      - libtiff6
       - libwebp7
       - libexif12
+      - libjxl0.11
+      - poppler-utils
     stage:
       - -lib/lib*.la
       # The *.la file which gets installed by "make install" contains a
@@ -439,7 +432,7 @@ parts:
       - usr/lib/*/nss
       # Reported unused by snapcraft linter
       - -usr/lib/*/libssl3.*
-    after: [cups, qpdf, ghostscript]
+    after: [cups, pdfio, ghostscript]
 
   libppd:
     source: https://github.com/OpenPrinting/libppd
@@ -519,6 +512,12 @@ parts:
       - --disable-mutool
       - --disable-universal-cups-filter
       - --enable-individual-cups-filters
+    override-pull: |
+      set -eux
+      # Do the actual pull task
+      craftctl default
+      # Patch to fix build with GCC 15, to be removed on next upstream release of cups-filters
+      patch -p1 < $CRAFT_PROJECT_DIR/patches/fix-gcc15-ftbfs.patch
     build-environment:
       # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
@@ -526,13 +525,11 @@ parts:
       - sharutils
       - poppler-utils
       - liblcms2-dev
-      - libpoppler-cpp-dev
       - zlib1g-dev
       - libavahi-common-dev
       - libavahi-client-dev
     stage-packages:
       - poppler-utils
-      - libpoppler-cpp0v5
       - fonts-freefont-ttf
       - fonts-arphic-uming
       - fontconfig-config
@@ -550,7 +547,7 @@ parts:
       - -usr/share/lintian
       # Reported unused by snapcraft linter
       - -usr/lib/*/libssl3.*
-    after: [cups, qpdf, ghostscript, libcupsfilters, libppd]
+    after: [cups, ghostscript, libcupsfilters, libppd]
 
   cups-browsed:
     source: https://github.com/OpenPrinting/cups-browsed.git
