@@ -615,6 +615,8 @@ parts:
       - scripts/
     build-packages:
       - gcc
+    stage-packages:
+      - perl-base
     after: [cups, cups-filters]
 
   cups-proxyd:
