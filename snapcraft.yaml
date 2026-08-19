@@ -611,12 +611,14 @@ parts:
       reload-cups-browsed: scripts/reload-cups-browsed
       run-util: scripts/run-util
       port-occupied: scripts/port-occupied
-    prime:
-      - scripts/
     build-packages:
       - gcc
     stage-packages:
       - perl-base
+    prime:
+      - scripts/
+      - usr/bin/perl*
+      - usr/lib/*/perl-base/
     after: [cups, cups-filters]
 
   cups-proxyd:
