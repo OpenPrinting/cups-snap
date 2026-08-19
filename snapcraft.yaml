@@ -1,6 +1,6 @@
 name: cups
 base: core26 # The base Snap is the execution environment for this Snap
-version: '2.4.19-3'
+version: '2.4.19-4'
 grade: stable
 summary: CUPS-based printing stack Snap
 description: Complete printing environment in a Snap
