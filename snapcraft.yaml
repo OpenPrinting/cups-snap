@@ -1,6 +1,6 @@
 name: cups
 base: core26 # The base Snap is the execution environment for this Snap
-version: '2.4.19-4'
+version: '2.4.19-5'
 grade: stable
 summary: CUPS-based printing stack Snap
 description: Complete printing environment in a Snap
@@ -263,7 +263,7 @@ parts:
 
   pdfio:
     source: https://github.com/michaelrsweet/pdfio.git
-    source-tag: 'v1.6.4'
+    source-tag: 'v1.6.5'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
