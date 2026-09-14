@@ -1,6 +1,6 @@
 name: cups
 base: core26 # The base Snap is the execution environment for this Snap
-version: '2.4.19-5'
+version: '2.4.19-6'
 grade: stable
 summary: CUPS-based printing stack Snap
 description: Complete printing environment in a Snap
@@ -306,7 +306,7 @@ parts:
     #source: https://git.ghostscript.com/ghostpdl.git
     source: https://github.com/ArtifexSoftware/ghostpdl.git
     source-type: git
-    source-tag: 'ghostpdl-10.07.1'
+    source-tag: 'ghostpdl-10.08.0'
     source-depth: 1
 # ext:updatesnap
 #   version-format:
