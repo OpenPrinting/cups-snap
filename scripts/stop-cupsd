@@ -1,6 +1,6 @@
 #! /bin/sh
 
-set -e -x
+set -e
 
 # Exit if we are already shutting down cupsd
 if [ -f "${SNAP_DATA}/var/run/stop-cupsd.lock" ]; then
