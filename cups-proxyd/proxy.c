@@ -50,7 +50,7 @@ main(int  argc,				/* I - Number of command-line args */
      char *argv[])			/* I - Command-line arguments */
 {
   const char	*device_uri;            /* URI with which we were called */
-  char scheme[64], username[32], system_cups_server[1024], resource[32];
+  char scheme[64], username[32], system_cups_server[1024], resource[HTTP_MAX_URI];
   int port, status;
   char *system_queue;
   char *p;
