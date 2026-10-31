@@ -622,6 +622,57 @@ remove_queue_from_proxy (const char *name)
 }
 
 
+/* Remove a temporary queue from the system's CUPS. This is used when
+   our dummy connection has made the system's CUPS create a temporary
+   queue for a printer which turns out to be the system's CUPS echoing
+   its own shared printer. Such a queue only exists on the system's
+   CUPS, so it has to be removed there and not on the proxy */
+static int
+remove_temporary_queue_from_system (const char *name)
+{
+  http_t        *http;
+  char          uri[HTTP_MAX_URI];
+  ipp_t         *request;
+
+
+  if (terminating)
+    return (1);
+
+  debug_printf("Removing temporary queue %s from the system's CUPS.\n", name);
+
+  /* Connect to the system's CUPS daemon */
+  if ((http = http_connect_system()) == NULL) {
+    debug_printf("Could not connect to system's CUPS daemon.\n");
+    return (0);
+  }
+
+  /* Remove the CUPS queue */
+  request = ippNewRequest(CUPS_DELETE_PRINTER);
+
+  /* Printer URI: ipp://localhost/printers/<queue name> */
+  httpAssembleURIf(HTTP_URI_CODING_ALL, uri, sizeof(uri), "ipp", NULL,
+		   "localhost", 0, "/printers/%s", name);
+  ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
+	       "printer-uri", NULL, uri);
+
+  /* Default user */
+  ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+	       "requesting-user-name", NULL, cupsUser());
+
+  /* Do it */
+  ippDelete(cupsDoRequest(http, request, "/admin/"));
+
+  if (cupsLastError() > IPP_STATUS_OK_EVENTS_COMPLETE &&
+      cupsLastError() != IPP_STATUS_ERROR_NOT_FOUND) {
+    debug_printf("Unable to remove temporary queue from the system's CUPS! (%s)\n",
+		 cupsLastErrorString());
+    return (0);
+  }
+
+  return (1);
+}
+
+
 /* Create a queue on the proxy CUPS daemon which resembles the given
    queue from the system's CUPS. Having the same PPD (but without
    filter definitions) and basic properties of the system's queue
@@ -721,6 +772,7 @@ clone_system_queue_to_proxy (cups_dest_t *dest)
 	     strcasecmp(host + 9, ".local.") == 0)))))) {
       debug_printf("The queue %s is a shared printer of the system's CUPS echoed as a printer discovered by the system's CUPS, skipping/removing!\n",
 		   dest->name);
+      remove_temporary_queue_from_system(dest->name);
       remove_queue_from_proxy(dest->name);
       return (1);
     }
