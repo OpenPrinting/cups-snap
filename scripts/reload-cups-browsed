@@ -1,6 +1,6 @@
 #! /bin/sh
 
-set -e -x
+set -e
 
 # Stop cups-browsed to get it automatically restarted
 echo "==> Stopping cups-browsed for automatic restart"
