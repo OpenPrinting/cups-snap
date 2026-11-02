@@ -91,10 +91,14 @@ dump_diagnostics() {
 	echo "--- snapped lpstat -t ---"; cups.lpstat -t       2>&1 || true
 	echo "--- snap cupsd error_log ---"
 	tail -n 150 /var/snap/cups/current/var/log/error_log 2>/dev/null || true
+	echo "--- snap cupsd error_log: job lines ---"
+	grep -F '[Job ' /var/snap/cups/current/var/log/error_log 2>/dev/null | tail -n 200 || true
 	if [ "$MODE" != standalone ]; then
 		echo "--- host lpstat -t ---"; lpstat -t           2>&1 || true
 		echo "--- host cupsd error_log ---"
 		tail -n 150 /var/log/cups/error_log 2>/dev/null || true
+		echo "--- host cupsd error_log: job lines ---"
+		grep -F '[Job ' /var/log/cups/error_log 2>/dev/null | tail -n 200 || true
 		echo "--- cups-proxyd log ---"
 		tail -n 150 /var/snap/cups/current/var/log/cups-proxyd_log 2>/dev/null || true
 	fi
