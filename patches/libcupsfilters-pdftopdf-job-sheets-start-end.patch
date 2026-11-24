@@ -1,0 +1,124 @@
+From 8d1438a885a411fc1ce1b3577fc76aa886911a97 Mon Sep 17 00:00:00 2001
+From: Charles Provent <charles.provent@socotec.com>
+Date: Thu, 22 Oct 2026 15:48:56 +0200
+Subject: [PATCH 2/2] pdftopdf: read job-sheets as "start,end" and use the CUPS
+ job title
+
+CUPS sends job-sheets as "start" or "start,end", so a queue with
+JobSheets none none gives the filters "job-sheets=none,none".
+pdftopdf compared the whole value with "none", so every such job got a
+banner page at the start and another at the end. The same test guarded
+both banners, which also printed an end banner for "standard,none".
+
+Split the value on the comma: the first part is the start banner, the
+second the end banner, and a single value only asks for a start banner,
+as cupsd does.
+
+The banner also showed "Title: Untitled" and "User: Guest", because
+cfFilterOptionsCreate() only looks at the job-name and
+job-originating-user-name options, while CUPS passes the title and user
+as filter arguments (argv[3] and argv[2]). Use data->job_title and
+data->job_user when those options are absent.
+
+Add test-pdftopdf-job-sheets.sh, which counts the output pages for
+several job-sheets values and checks the banner text.
+
+Fixes #262
+
+Backported from upstream commit ea62f9c20 (PR #297) to libcupsfilters 2.2.1,
+limited to cupsfilters/pdftopdf.c (the new upstream test is not included).
+The job title/user hunk is placed after cfFilterOptionsCreate() since 2.2.1
+lacks the data->copies handling it is anchored on upstream.
+---
+ cupsfilters/pdftopdf.c | 54 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 52 insertions(+), 2 deletions(-)
+
+diff --git a/cupsfilters/pdftopdf.c b/cupsfilters/pdftopdf.c
+index eb22a79b..6a3c61bf 100644
+--- a/cupsfilters/pdftopdf.c
++++ b/cupsfilters/pdftopdf.c
+@@ -228,6 +228,42 @@ generate_job_sheets(
+ }
+ 
+ 
++//
++// 'job_sheet_wanted()' - Check whether "job-sheets" asks for a start or end
++//                        banner.
++//
++// CUPS passes "job-sheets" as "start" or "start,end".  A single value only
++// applies to the start of the job, and "none" disables the banner.
++//
++
++static bool				// O - `true` if a banner is wanted
++job_sheet_wanted(const char *job_sheets,// I - "job-sheets" value
++                 bool       end)	// I - `true` for the end banner
++{
++  const char	*value = job_sheets,	// Start of the value to check
++		*comma;			// Comma separating start and end
++  size_t	len;			// Length of the value to check
++
++
++  comma = strchr(job_sheets, ',');
++
++  if (end)
++  {
++    if (!comma)
++      return (false);
++
++    value = comma + 1;
++    len   = strlen(value);
++  }
++  else if (comma)
++    len = (size_t)(comma - value);
++  else
++    len = strlen(value);
++
++  return (len > 0 && (len != 4 || strncasecmp(value, "none", 4)));
++}
++
++
+ 
+ //
+ // 'media_to_rect()' - Convert `cups_media_t` to `pdfio_rect_t` for media and crop boxes.
+@@ -2607,7 +2643,7 @@ prepare_documents(
+   prepare_pages(&p, num_documents, documents);
+ 
+   // Add job-sheets content...
+-  if (options->job_sheets[0] && strcmp(options->job_sheets, "none"))
++  if (job_sheet_wanted(options->job_sheets, false))
+     generate_job_sheets(&p);
+ 
+   // Copy pages to the output file...
+@@ -2711,7 +2747,7 @@ prepare_documents(
+   }
+ 
+   // Add final job-sheets content...
+-  if (options->job_sheets[0] && strcmp(options->job_sheets, "none"))
++  if (job_sheet_wanted(options->job_sheets, true))
+     generate_job_sheets(&p);
+ 
+   // Add job-error-sheet content as needed...
+@@ -2806,6 +2842,20 @@ cfFilterPDFToPDF(int inputfd,
+ 
+   filter_options = cfFilterOptionsCreate(data->num_options, data->options);
+ 
++  // CUPS passes the job title and user as argv[3] and argv[2], not as
++  // "job-name" and "job-originating-user-name" options, so use them for the
++  // banner unless the options are present.
++  if (data->job_title && data->job_title[0] &&
++      !cupsGetOption("job-name", data->num_options, data->options))
++    snprintf(filter_options->job_name, sizeof(filter_options->job_name),
++	     "%s", data->job_title);
++  if (data->job_user && data->job_user[0] &&
++      !cupsGetOption("job-originating-user-name", data->num_options,
++		     data->options))
++    snprintf(filter_options->job_originating_user_name,
++	     sizeof(filter_options->job_originating_user_name), "%s",
++	     data->job_user);
++
+   char temp_filename[] = "/tmp/tempfileXXXXXX";
+   int temp_fd = mkstemp(temp_filename);
+   if (temp_fd == -1)
+-- 
+2.53.0
+
