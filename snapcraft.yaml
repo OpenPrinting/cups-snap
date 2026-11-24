@@ -381,6 +381,16 @@ parts:
       - --includedir=/include
       - --disable-avahi
       - --disable-mutool
+    override-pull: |
+      set -eux
+      # Do the actual pull task
+      craftctl default
+      # Patches for pdftopdf, to be removed on next upstream release of
+      # libcupsfilters: Do not add banner pages for "job-sheets=none,none"
+      # (https://github.com/OpenPrinting/cups-snap/issues/42) and do not fail
+      # on annotations without an appearance stream
+      patch -p1 < $CRAFT_PROJECT_DIR/patches/libcupsfilters-pdftopdf-annotations-without-appearance.patch
+      patch -p1 < $CRAFT_PROJECT_DIR/patches/libcupsfilters-pdftopdf-job-sheets-start-end.patch
     build-environment:
       # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"
