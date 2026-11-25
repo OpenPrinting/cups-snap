@@ -391,6 +391,11 @@ parts:
       # on annotations without an appearance stream
       patch -p1 < $CRAFT_PROJECT_DIR/patches/libcupsfilters-pdftopdf-annotations-without-appearance.patch
       patch -p1 < $CRAFT_PROJECT_DIR/patches/libcupsfilters-pdftopdf-job-sheets-start-end.patch
+      # Patch for cfPDFPagesFP(), to be removed on next upstream release of
+      # libcupsfilters: Flush the temporary file before PDFio reads it, so
+      # that gstoraster does not fail on small PDFs with "Unexpected page
+      # count" (upstream commits e14bad40 and e7356ce1)
+      patch -p1 < $CRAFT_PROJECT_DIR/patches/libcupsfilters-pdf-flush-temp-file.patch
     build-environment:
       # To find the libraries built in this Snap
       - LD_LIBRARY_PATH: "${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$CRAFT_STAGE/usr/lib:$CRAFT_STAGE/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:$CRAFT_STAGE/lib"

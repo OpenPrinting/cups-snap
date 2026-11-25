@@ -1,0 +1,87 @@
+From: rue19 <shrinjalik@gmail.com>
+Subject: [PATCH] cfPDFPagesFP: flush the temporary file before PDFio reads it
+
+cfPDFPagesFP() copies the PDF into a temporary file with fwrite() and
+then opens that file by name with pdfioFileOpen() without flushing it
+first.  For small documents most or all of the data is still in the
+stdio buffer, so PDFio sees a truncated file ("Missing Root object."),
+the page count is -1 and cfFilterGhostscript() fails with "Unexpected
+page count".  So gstoraster fails for small PDF jobs, e.g. on driverless
+(IPP Everywhere) queues.
+
+Flush the file and check the writes, and also check the write() calls
+when cfFilterGhostscript() copies its input to a temporary file.
+
+Backported from upstream commits e14bad40 (#167) and e7356ce1 (#284) to
+libcupsfilters 2.2.1.
+---
+ cupsfilters/ghostscript.c | 25 ++++++++++++++++++++++++-
+ cupsfilters/pdf.c         | 19 ++++++++++++++++++-
+ 2 files changed, 42 insertions(+), 2 deletions(-)
+
+diff --git a/cupsfilters/ghostscript.c b/cupsfilters/ghostscript.c
+index 9e8fa8fa..0c27333b 100644
+--- a/cupsfilters/ghostscript.c
++++ b/cupsfilters/ghostscript.c
+@@ -1018,7 +1018,30 @@ cfFilterGhostscript(int inputfd,            // I - File descriptor input
+ 		   tempfile);
+ 
+       while ((bytes = fread(buf, 1, sizeof(buf), fp)) > 0)
+-	bytes = write(fd, buf, bytes);
++      {
++	char *ptr = buf;
++
++	while (bytes > 0)
++	{
++	  ssize_t written = write(fd, ptr, bytes);
++
++	  if (written < 0)
++	  {
++	    if (errno == EINTR)
++	      continue;
++	    if (log) log(ld, CF_LOGLEVEL_ERROR,
++			 "cfFilterGhostscript: Unable to copy PDF file: %s",
++			 strerror(errno));
++	    fclose(fp);
++	    close(fd);
++	    unlink(tempfile);
++	    return (1);
++	  }
++
++	  ptr += written;
++	  bytes -= (int)written;
++	}
++      }
+ 
+       fclose(fp);
+       close(fd);
+diff --git a/cupsfilters/pdf.c b/cupsfilters/pdf.c
+index 1f714b20..c811f1c4 100644
+--- a/cupsfilters/pdf.c
++++ b/cupsfilters/pdf.c
+@@ -162,7 +162,24 @@ cfPDFPagesFP(FILE *file) 	// I - File pointer of PDF
+   size_t bytes_read;
+   while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) 
+   {
+-    fwrite(buffer, 1, bytes_read, temp_fp);
++    if (fwrite(buffer, 1, bytes_read, temp_fp) != bytes_read)
++    {
++      fprintf(stderr, "fwrite: Could not write temporary file\n");
++      fclose(temp_fp);
++      unlink(temp_filename);
++      return (-1);
++    }
++  }
++
++  // call fflush(temp_fp) to flush the stdio buffer; 
++  // otherwise pdfioFileOpen() may not see the complete contents of temp_filename because 
++  // some data may still be buffered and not yet written to the file.
++  if (fflush(temp_fp) != 0)
++  {
++    fprintf(stderr, "fflush: Could not write temporary file\n");
++    fclose(temp_fp);
++    unlink(temp_filename);
++    return (-1);
+   }
+ 
+   // Open the temp file with pdfio
