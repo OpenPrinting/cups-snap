@@ -267,9 +267,17 @@ http_connect(http_t **conn, const char *server)
   if (!conn)
     return (NULL);
 
-  const char *server_str = strdup(server);
+  char *server_str = strdup(server);
   int port = 631;
-  char *p = strrchr(server_str, ':');
+  char *p;
+
+  if (!server_str) {
+    debug_printf("cups-proxyd: Unable to allocate memory for server name %s\n",
+		 server);
+    return (NULL);
+  }
+
+  p = strrchr(server_str, ':');
 
   if (p) {
     *p = '\0';
@@ -296,6 +304,8 @@ http_connect(http_t **conn, const char *server)
       debug_printf("cups-proxyd: Failed creating http connection to CUPS daemon: %s:%d\n",
 		   server_str, port);
   }
+
+  free(server_str);
 
   return *conn;
 }

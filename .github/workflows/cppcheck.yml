@@ -32,10 +32,17 @@ jobs:
 
       - name: Run cppcheck
         run: |
+          # cppcheck does not read the system's GLib headers, and VERSION
+          # comes from the Makefile.  Without these definitions cppcheck 2.19
+          # fails on "#if GLIB_CHECK_VERSION(...)" in cups-notifier.h, and
+          # the unknown macros make it skip cups-proxyd.c altogether.
+          printf '#define GLIB_CHECK_VERSION(major, minor, micro) 1\n#define VERSION "1.0"\n' > "$RUNNER_TEMP/cppcheck-defines.h"
           cppcheck \
             --enable=warning,performance,portability \
             --error-exitcode=1 \
             --inline-suppr \
+            --library=gtk \
+            --include="$RUNNER_TEMP/cppcheck-defines.h" \
             --suppress=missingIncludeSystem \
             --suppress=unknownMacro \
             .
