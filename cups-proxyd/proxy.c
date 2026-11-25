@@ -55,8 +55,8 @@ main(int  argc,				/* I - Number of command-line args */
   char *system_queue;
   char *p;
   http_t *http;
-  int num_options;
-  cups_option_t	*options;
+  int num_options = 0;
+  cups_option_t	*options = NULL;
   int fd;
   int job_id;
   const char *format;
@@ -119,6 +119,38 @@ main(int  argc,				/* I - Number of command-line args */
     fprintf(stderr, "DEBUG: Received job to print on the printer %s on the system's CUPS server (%s).\n",
 	    system_queue, system_cups_server);
 
+    /* Open the input file with the job data if there is one */
+    if (argc == 7) {
+      if ((fd = open(argv[6], O_RDONLY)) < 0) {
+	fprintf(stderr, "ERROR: Unable to open input file - %s\n",
+		strerror(errno));
+	return (CUPS_BACKEND_FAILED);
+      }
+    } else
+      fd = 0; /* stdin */
+
+    /* Wait for the first job data before contacting the system's CUPS
+       daemon.  If there is none (for example because a filter failed),
+       do not send an empty job there, as it would be rejected and the
+       job would be retried over and over again.  Exit successfully
+       instead, like the CUPS backends do, so that the scheduler reports
+       the filter's error for the job. */
+    while ((bytes = read(fd, buffer, sizeof(buffer))) < 0 &&
+	   errno == EINTR && !job_canceled);
+
+    if (bytes <= 0 || job_canceled) {
+      if (job_canceled)
+	fprintf(stderr, "DEBUG: Job canceled before any job data was received.\n");
+      else if (bytes < 0)
+	fprintf(stderr, "ERROR: Unable to read job data - %s\n",
+		strerror(errno));
+      else
+	fprintf(stderr, "DEBUG: No job data received, not sending a job to the system's CUPS daemon.\n");
+      if (fd != 0)
+	close(fd);
+      return (CUPS_BACKEND_OK);
+    }
+
     /* Select the system's CUPS server to print on */
     cupsSetServer(system_cups_server);
 
@@ -139,6 +171,7 @@ main(int  argc,				/* I - Number of command-line args */
 	 httpConnect2(system_cups_server, port, NULL, AF_UNSPEC,
 		      cupsEncryption(), 1, 30000, NULL)) == NULL) {
       fprintf(stderr, "ERROR: Unable to connect to the system's CUPS daemon!\n");
+      close(fd);
       return (CUPS_BACKEND_RETRY);
     }
 
@@ -151,16 +184,6 @@ main(int  argc,				/* I - Number of command-line args */
     /* Pass on the number of copies */
     num_options = cupsAddOption("copies", argv[4], num_options, &options);
 
-    /* Open the input file with the job data if there is one */
-    if (argc == 7) {
-      if ((fd = open(argv[6], O_RDONLY)) < 0) {
-	fprintf(stderr, "ERROR: Unable to open input file - %s\n",
-		strerror(errno));
-	return (CUPS_BACKEND_FAILED);
-      }
-    } else
-      fd = 0; /* stdin */
-    
     /* Send job data off to the corresponding queue on the system's CUPS
        daemon */
     if ((job_id = cupsCreateJob(http, system_queue, argv[3],
@@ -173,9 +196,12 @@ main(int  argc,				/* I - Number of command-line args */
 
       status = cupsStartDocument(http, system_queue, job_id, NULL, format, 1);
 
-      while (!job_canceled && status == HTTP_CONTINUE &&
-	     (bytes = read(fd, buffer, sizeof(buffer))) > 0)
+      /* The first chunk of job data is already in the buffer */
+      while (!job_canceled && status == HTTP_CONTINUE && bytes > 0) {
 	status = cupsWriteRequestData(http, buffer, (size_t)bytes);
+	if (status == HTTP_CONTINUE)
+	  bytes = read(fd, buffer, sizeof(buffer));
+      }
 
       if (status != HTTP_CONTINUE) {
 	fprintf(stderr, "ERROR: Unable to send job data to system's CUPS daemon - %s\n",
