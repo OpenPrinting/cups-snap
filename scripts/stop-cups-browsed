@@ -1,6 +1,6 @@
 #! /bin/sh
 
-set -e -x
+set -e
 
 # Exit if we are already shutting down cups-browsed
 if [ -f "${SNAP_DATA}/var/run/stop-cups-browsed.lock" ]; then
